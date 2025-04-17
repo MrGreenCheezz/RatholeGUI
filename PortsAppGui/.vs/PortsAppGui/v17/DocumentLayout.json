@@ -1,0 +1,187 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\service.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:service.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\configstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:configstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\portsappgui\\portsappgui.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:portsappgui.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 7,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "SshConnector.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\SshConnector.cs",
+              "RelativeDocumentMoniker": "SshConnector.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\SshConnector.cs",
+              "RelativeToolTip": "SshConnector.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAuwEAAAAATAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T11:54:23.583Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Form1.Designer.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Form1.Designer.cs",
+              "RelativeDocumentMoniker": "Form1.Designer.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Form1.Designer.cs",
+              "RelativeToolTip": "Form1.Designer.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABcAAAAIAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T11:04:40.057Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "PortsAppGui.csproj",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\PortsAppGui.csproj",
+              "RelativeDocumentMoniker": "PortsAppGui.csproj",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\PortsAppGui.csproj",
+              "RelativeToolTip": "PortsAppGui.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvwAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-04-15T11:29:09.994Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ServiceControl.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\ServiceControl.cs",
+              "RelativeDocumentMoniker": "ServiceControl.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\ServiceControl.cs",
+              "RelativeToolTip": "ServiceControl.cs",
+              "ViewState": "AQIAABUAAAAAAAAAAAAtwB0AAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T12:19:22.686Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "ServiceControl.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\ServiceControl.cs",
+              "RelativeDocumentMoniker": "ServiceControl.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\ServiceControl.cs [Design]",
+              "RelativeToolTip": "ServiceControl.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T12:12:38.785Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ConfigStore.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\ConfigStore.cs",
+              "RelativeDocumentMoniker": "ConfigStore.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\ConfigStore.cs",
+              "RelativeToolTip": "ConfigStore.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABMAAAAyAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T11:29:51.232Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Service.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Service.cs",
+              "RelativeDocumentMoniker": "Service.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Service.cs",
+              "RelativeToolTip": "Service.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvwgAAAAKAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T11:29:42.309Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AQIAAAoAAAAAAAAAAAAhwCAAAACQAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T11:19:53.921Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABgAAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T11:11:28.591Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Form1.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\PortsAppGui\\Form1.cs [Design]",
+              "RelativeToolTip": "Form1.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T10:47:18.972Z",
+              "EditorCaption": " [Design]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
