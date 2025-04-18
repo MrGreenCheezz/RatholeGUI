@@ -16,7 +16,7 @@ This tool is especially useful for setting up reverse proxy tunnels quickly with
 - Automatically generates Rathole configuration files based on predefined templates.
 - Supports secure upload of configs via SSH to both server and client machines.
 - Provides control over the execution of Rathole remotely.
-- Creates a `data.json` file on first launch, which stores:
+- Saves all data in `data.json` , which stores:
   - Server and client IP addresses for SSH access,
   - SSH ports,
   - Paths to the Rathole binary on each machine,
