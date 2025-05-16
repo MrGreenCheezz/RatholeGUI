@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic.ApplicationServices;
+﻿
 using Renci.SshNet;
-using Renci.SshNet.Common;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace PortsAppGui
 {

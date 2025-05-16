@@ -65,6 +65,7 @@ namespace PortsAppGui
 
         public JsonDataClass LoadJsonFromDataFile()
         {
+            var fileExistence = File.Exists(Program.DataFilePath);
             if (!File.Exists(Program.DataFilePath))
             {
                 var tmpFile = File.Create(Program.DataFilePath);
@@ -91,7 +92,7 @@ namespace PortsAppGui
                 return data;
             }
             catch (Exception)
-            {
+            {          
                 throw new FileLoadException("No file");
             }
         }
@@ -124,9 +125,10 @@ namespace PortsAppGui
 
         private void RearangeElements(int index)
         {
-            for (int i = 0; i < panel1.Controls.Count; i++)
+            var controlsArray = panel1.Controls.OfType<ServiceControl>().ToList();
+            for (int i = 0; i < controlsArray.Count; i++)
             {
-                var serviceControl = (ServiceControl)panel1.Controls[i];
+                var serviceControl = controlsArray[i];
                 serviceControl.Location = new Point(0, i * (110));
                 serviceControl.Index = i;
             }
@@ -136,9 +138,11 @@ namespace PortsAppGui
         {
             _dataObject.Configs.ClientTomlPath = ClientPathTextBox.Text;
             _dataObject.Configs.ServerTomlPath = ServerPathTextBox.Text;
-            foreach (ServiceControl control in panel1.Controls)
+            foreach (Control control in panel1.Controls)
             {
-                _dataObject.Services[control.Index] = control.GetServiceData();
+                if (control is not ServiceControl) continue;
+                var castedControl = (ServiceControl)control;
+                _dataObject.Services[castedControl.Index] = castedControl.GetServiceData();
             }
 
             string dataToWrite = JsonSerializer.Serialize(_dataObject, new JsonSerializerOptions { WriteIndented = true });
@@ -196,7 +200,8 @@ keepalive_interval = 8
 
             File.WriteAllText(clientFilePath, clientfileContent, Encoding.UTF8);
             File.WriteAllText(serverFilePath, serverfileContent, Encoding.UTF8);
-            foreach (ServiceControl control in panel1.Controls)
+            var controlsArray = panel1.Controls.OfType<ServiceControl>().ToList();
+            foreach (ServiceControl control in controlsArray)
             {
                 var data = control.GetServiceData();
                 string clienttext = $@"[client.services.{data.ServiceName}]
