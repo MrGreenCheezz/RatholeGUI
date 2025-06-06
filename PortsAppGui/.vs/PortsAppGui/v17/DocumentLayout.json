@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\ratholegui\\portsappgui\\sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\ratholegui\\portsappgui\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
@@ -13,6 +13,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|c:\\users\\administrator\\desktop\\openports\\gui\\ratholegui\\portsappgui\\sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -27,12 +31,25 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AQIAAOYAAAAAAAAAAAAUwPgAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-06T22:55:30.131Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "SshConnector.cs",
               "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\SshConnector.cs",
               "RelativeDocumentMoniker": "SshConnector.cs",
               "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\SshConnector.cs",
               "RelativeToolTip": "SshConnector.cs",
-              "ViewState": "AQIAAA4AAAAAAAAAAAAgwCsAAAAMAAAA",
+              "ViewState": "AQIAAA4AAAAAAAAAAAAgwBAAAABTAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-05-16T19:48:12.497Z",
               "EditorCaption": ""
@@ -58,7 +75,8 @@
               "ToolTip": "C:\\Users\\Administrator\\Desktop\\OpenPorts\\Gui\\RatholeGUI\\PortsAppGui\\ServiceControl.cs [Design]",
               "RelativeToolTip": "ServiceControl.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-16T19:29:28.842Z"
+              "WhenOpened": "2025-05-16T19:29:28.842Z",
+              "EditorCaption": " [Design]"
             }
           ]
         }

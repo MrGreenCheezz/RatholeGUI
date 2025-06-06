@@ -48,6 +48,13 @@ namespace PortsAppGui
 
         public void EndRatholeConnection()
         {
+            if (!Client.IsConnected)
+            {
+                var ssh = new SshClient(_host, _port, _username, _password);
+                ssh.KeepAliveInterval = TimeSpan.FromSeconds(60);
+                ssh.Connect();
+            }
+
             if (!string.IsNullOrEmpty(ProccessPID))
             {
                 Client.RunCommand($"kill -9 {ProccessPID}");
