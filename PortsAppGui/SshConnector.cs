@@ -50,9 +50,7 @@ namespace PortsAppGui
         {
             if (!Client.IsConnected)
             {
-                var ssh = new SshClient(_host, _port, _username, _password);
-                ssh.KeepAliveInterval = TimeSpan.FromSeconds(60);
-                ssh.Connect();
+                Client.Connect();
             }
 
             if (!string.IsNullOrEmpty(ProccessPID))
