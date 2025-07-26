@@ -12,6 +12,8 @@ namespace PortsAppGui
         private SshConnector _clientConnector;
         private SshConnector _serverConnector;
 
+        private Image SuccessImage = Image.FromFile("./Resources/success.png");
+        private Image ErrorImage = Image.FromFile("./Resources/error.png");
         private bool _isFreshStart = false;
         public Form1()
         {
@@ -236,11 +238,13 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             {
                 StopButton.Enabled = true;
                 RunButton.Enabled = false;
+                pictureBox1.Image = SuccessImage;
             }
             else
             {
                 RunButton.Enabled = true;
                 StopButton.Enabled = false;
+                pictureBox1.Image = ErrorImage;
             }
         }
 
@@ -271,6 +275,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             {
                 RunButton.Enabled = true;
                 StopButton.Enabled = false;
+                pictureBox1.Image = ErrorImage;
             }
         }
     }

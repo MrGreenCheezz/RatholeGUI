@@ -48,6 +48,7 @@ namespace PortsAppGui
 
         public void EndRatholeConnection()
         {
+            if (Client == null) return;
             if (!Client.IsConnected)
             {
                 Client.Connect();

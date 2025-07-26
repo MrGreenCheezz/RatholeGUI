@@ -29,6 +29,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             label1 = new Label();
             ClientPathTextBox = new TextBox();
             label2 = new Label();
@@ -37,9 +38,11 @@
             SaveRulesButton = new Button();
             RunButton = new Button();
             panel1 = new FlowLayoutPanel();
-            StopButton = new Button();
             ErrorText = new Label();
+            StopButton = new Button();
+            pictureBox1 = new PictureBox();
             panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
             // label1
@@ -78,9 +81,9 @@
             // 
             // AddRuleButton
             // 
-            AddRuleButton.Location = new Point(12, 434);
+            AddRuleButton.Location = new Point(524, 70);
             AddRuleButton.Name = "AddRuleButton";
-            AddRuleButton.Size = new Size(112, 23);
+            AddRuleButton.Size = new Size(129, 23);
             AddRuleButton.TabIndex = 5;
             AddRuleButton.Text = "Add rule";
             AddRuleButton.UseVisualStyleBackColor = true;
@@ -88,9 +91,9 @@
             // 
             // SaveRulesButton
             // 
-            SaveRulesButton.Location = new Point(130, 434);
+            SaveRulesButton.Location = new Point(524, 99);
             SaveRulesButton.Name = "SaveRulesButton";
-            SaveRulesButton.Size = new Size(112, 23);
+            SaveRulesButton.Size = new Size(129, 23);
             SaveRulesButton.TabIndex = 6;
             SaveRulesButton.Text = "Save config";
             SaveRulesButton.UseVisualStyleBackColor = true;
@@ -98,7 +101,7 @@
             // 
             // RunButton
             // 
-            RunButton.Location = new Point(524, 27);
+            RunButton.Location = new Point(524, 12);
             RunButton.Name = "RunButton";
             RunButton.Size = new Size(129, 23);
             RunButton.TabIndex = 8;
@@ -114,19 +117,8 @@
             panel1.Location = new Point(12, 137);
             panel1.Name = "panel1";
             panel1.Padding = new Padding(15, 5, 0, 0);
-            panel1.Size = new Size(670, 282);
+            panel1.Size = new Size(670, 320);
             panel1.TabIndex = 9;
-            // 
-            // StopButton
-            // 
-            StopButton.Enabled = false;
-            StopButton.Location = new Point(524, 83);
-            StopButton.Name = "StopButton";
-            StopButton.Size = new Size(129, 23);
-            StopButton.TabIndex = 10;
-            StopButton.Text = "Stop connection!";
-            StopButton.UseVisualStyleBackColor = true;
-            StopButton.Click += StopButton_Click;
             // 
             // ErrorText
             // 
@@ -139,11 +131,32 @@
             ErrorText.Text = "Fill data.json";
             ErrorText.Visible = false;
             // 
+            // StopButton
+            // 
+            StopButton.Enabled = false;
+            StopButton.Location = new Point(524, 41);
+            StopButton.Name = "StopButton";
+            StopButton.Size = new Size(129, 23);
+            StopButton.TabIndex = 10;
+            StopButton.Text = "Stop connection!";
+            StopButton.UseVisualStyleBackColor = true;
+            StopButton.Click += StopButton_Click;
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(353, 27);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(80, 80);
+            pictureBox1.TabIndex = 11;
+            pictureBox1.TabStop = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(694, 469);
+            Controls.Add(pictureBox1);
             Controls.Add(StopButton);
             Controls.Add(panel1);
             Controls.Add(RunButton);
@@ -153,15 +166,17 @@
             Controls.Add(label2);
             Controls.Add(ClientPathTextBox);
             Controls.Add(label1);
-            FormBorderStyle = FormBorderStyle.FixedToolWindow;
+            FormBorderStyle = FormBorderStyle.Fixed3D;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "Form1";
-            Text = "Form1";
+            Text = "RatholeGUI_App";
             FormClosing += Form1_FormClosing;
             FormClosed += Form1_FormClosed;
             Load += Form1_Load;
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -178,5 +193,6 @@
         private FlowLayoutPanel panel1;
         private Button StopButton;
         private Label ErrorText;
+        private PictureBox pictureBox1;
     }
 }
