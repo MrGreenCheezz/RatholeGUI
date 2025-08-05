@@ -207,12 +207,24 @@ keepalive_interval = 8
             {
                 var data = control.GetServiceData();
                 string clienttext = $@"[client.services.{data.ServiceName}]
+type = ""tcp""
 token = ""{data.ServiceToken}""
+local_addr = ""{data.ClientAdress}:{data.ClientPort}""
+
+[client.services.{data.ServiceName}_udp]
+type = ""udp""
+token = ""{data.ServiceToken}_udp""
 local_addr = ""{data.ClientAdress}:{data.ClientPort}""
 
 ";
                 string servertext = $@"[server.services.{data.ServiceName}]
+type = ""tcp""
 token = ""{data.ServiceToken}""
+bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
+
+[server.services.{data.ServiceName}_udp]
+type = ""udp""
+token = ""{data.ServiceToken}_udp""
 bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
 ";
