@@ -11,6 +11,7 @@ namespace PortsAppGui
         private JsonDataClass _dataObject;
         private SshConnector _clientConnector;
         private SshConnector _serverConnector;
+        private readonly System.Windows.Forms.Timer _connectionTimer;
 
         private Image SuccessImage = Image.FromFile("./Resources/success.png");
         private Image ErrorImage = Image.FromFile("./Resources/error.png");
@@ -19,6 +20,11 @@ namespace PortsAppGui
         {
             InitializeComponent();
             this.Load += MainForm_Load;
+            _connectionTimer = new System.Windows.Forms.Timer
+            {
+                Interval = 5000
+            };
+            _connectionTimer.Tick += ConnectionTimer_Tick;
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -250,13 +256,15 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             {
                 StopButton.Enabled = true;
                 RunButton.Enabled = false;
-                pictureBox1.Image = SuccessImage;
+                SetConnectionStatus(true);
+                StartConnectionMonitor();
             }
             else
             {
                 RunButton.Enabled = true;
                 StopButton.Enabled = false;
-                pictureBox1.Image = ErrorImage;
+                SetConnectionStatus(false);
+                StopConnectionMonitor();
             }
         }
 
@@ -267,6 +275,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            StopConnectionMonitor();
             _clientConnector?.EndRatholeConnection();
             _serverConnector?.EndRatholeConnection();
             process?.Kill(true);
@@ -274,6 +283,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+            StopConnectionMonitor();
             _clientConnector?.EndRatholeConnection();
             _serverConnector?.EndRatholeConnection();
             process?.Kill(true);
@@ -281,13 +291,56 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-            _clientConnector.EndRatholeConnection();
-            _serverConnector.EndRatholeConnection();
-            if(!_serverConnector.Client.IsConnected && !_clientConnector.Client.IsConnected)
+            StopConnectionMonitor();
+            _clientConnector?.EndRatholeConnection();
+            _serverConnector?.EndRatholeConnection();
+            RunButton.Enabled = true;
+            StopButton.Enabled = false;
+            SetConnectionStatus(false);
+        }
+
+        private void ConnectionTimer_Tick(object sender, EventArgs e)
+        {
+            if (_clientConnector == null || _serverConnector == null)
             {
-                RunButton.Enabled = true;
-                StopButton.Enabled = false;
-                pictureBox1.Image = ErrorImage;
+                HandleDisconnectedState();
+                return;
+            }
+
+            bool isClientAlive = _clientConnector.IsConnectionHealthy();
+            bool isServerAlive = _serverConnector.IsConnectionHealthy();
+            if (!isClientAlive || !isServerAlive)
+            {
+                HandleDisconnectedState();
+            }
+        }
+
+        private void HandleDisconnectedState()
+        {
+            StopConnectionMonitor();
+            RunButton.Enabled = true;
+            StopButton.Enabled = false;
+            SetConnectionStatus(false);
+        }
+
+        private void SetConnectionStatus(bool isConnected)
+        {
+            pictureBox1.Image = isConnected ? SuccessImage : ErrorImage;
+        }
+
+        private void StartConnectionMonitor()
+        {
+            if (!_connectionTimer.Enabled)
+            {
+                _connectionTimer.Start();
+            }
+        }
+
+        private void StopConnectionMonitor()
+        {
+            if (_connectionTimer.Enabled)
+            {
+                _connectionTimer.Stop();
             }
         }
     }

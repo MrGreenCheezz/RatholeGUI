@@ -46,21 +46,61 @@ namespace PortsAppGui
             Client = ssh;
         }
 
-        public void EndRatholeConnection()
+        public bool IsConnectionHealthy()
         {
-            if (Client == null) return;
-            if (!Client.IsConnected)
+            if (Client == null)
             {
-                Client.Connect();
+                return false;
             }
 
-            if (!string.IsNullOrEmpty(ProccessPID))
+            try
             {
-                Client.RunCommand($"kill -9 {ProccessPID}");
-                ProccessPID = "";
+                if (!Client.IsConnected)
+                {
+                    Client.Connect();
+                }
+
+                if (string.IsNullOrWhiteSpace(ProccessPID))
+                {
+                    return Client.IsConnected;
+                }
+
+                var cmdResult = Client.RunCommand($"ps -p {ProccessPID} -o pid=");
+                return Client.IsConnected && !string.IsNullOrWhiteSpace(cmdResult.Result);
             }
-            
-            Client?.Disconnect();
+            catch
+            {
+                return false;
+            }
+        }
+
+        public void EndRatholeConnection()
+        {
+            if (Client == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!Client.IsConnected)
+                {
+                    Client.Connect();
+                }
+
+                if (!string.IsNullOrEmpty(ProccessPID))
+                {
+                    Client.RunCommand($"kill -9 {ProccessPID}");
+                    ProccessPID = "";
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                Client.Disconnect();
+            }
         }
     }
 
