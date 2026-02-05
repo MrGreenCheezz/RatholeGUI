@@ -41,6 +41,7 @@
             ErrorText = new Label();
             StopButton = new Button();
             pictureBox1 = new PictureBox();
+            StatusLabel = new Label();
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
@@ -151,11 +152,21 @@
             pictureBox1.TabIndex = 11;
             pictureBox1.TabStop = false;
             // 
+            // StatusLabel
+            // 
+            StatusLabel.AutoSize = true;
+            StatusLabel.Location = new Point(353, 110);
+            StatusLabel.Name = "StatusLabel";
+            StatusLabel.Size = new Size(87, 15);
+            StatusLabel.TabIndex = 12;
+            StatusLabel.Text = "Status: Unknown";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(694, 469);
+            Controls.Add(StatusLabel);
             Controls.Add(pictureBox1);
             Controls.Add(StopButton);
             Controls.Add(panel1);
@@ -194,5 +205,6 @@
         private Button StopButton;
         private Label ErrorText;
         private PictureBox pictureBox1;
+        private Label StatusLabel;
     }
 }
