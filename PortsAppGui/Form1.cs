@@ -1,7 +1,11 @@
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
 namespace PortsAppGui
 {
@@ -11,6 +15,8 @@ namespace PortsAppGui
         private JsonDataClass _dataObject;
         private SshConnector _clientConnector;
         private SshConnector _serverConnector;
+        private readonly Timer _statusTimer;
+        private bool _isStatusCheckRunning;
 
         private Image SuccessImage = Image.FromFile("./Resources/success.png");
         private Image ErrorImage = Image.FromFile("./Resources/error.png");
@@ -19,6 +25,11 @@ namespace PortsAppGui
         {
             InitializeComponent();
             this.Load += MainForm_Load;
+            _statusTimer = new Timer
+            {
+                Interval = 3000
+            };
+            _statusTimer.Tick += StatusTimer_Tick;
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -63,6 +74,8 @@ namespace PortsAppGui
             _serverConnector = new SshConnector(_dataObject.Configs.ServerAdress.Split(':')[0],
                 int.Parse(_dataObject.Configs.ServerAdress.Split(':')[1]), _dataObject.Configs.ServerUsername,
                 _dataObject.Configs.ServerPassword);
+
+            _statusTimer.Start();
         }
 
         public JsonDataClass LoadJsonFromDataFile()
@@ -246,18 +259,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             _clientConnector.BeginRatholeConnection(_dataObject.Configs.ClientRatholePath + _dataObject.Configs.ClientTomlPath.Split('/')[^1],
                 _dataObject.Configs.ClientRatholePath);
 
-            if ((!string.IsNullOrEmpty(_clientConnector.ProccessPID) || _clientConnector.Client != null) && (!string.IsNullOrEmpty(_serverConnector.ProccessPID) || _serverConnector.Client != null))
-            {
-                StopButton.Enabled = true;
-                RunButton.Enabled = false;
-                pictureBox1.Image = SuccessImage;
-            }
-            else
-            {
-                RunButton.Enabled = true;
-                StopButton.Enabled = false;
-                pictureBox1.Image = ErrorImage;
-            }
+            _ = UpdateConnectionStatusAsync();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -267,6 +269,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            _statusTimer.Stop();
             _clientConnector?.EndRatholeConnection();
             _serverConnector?.EndRatholeConnection();
             process?.Kill(true);
@@ -274,6 +277,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+            _statusTimer.Stop();
             _clientConnector?.EndRatholeConnection();
             _serverConnector?.EndRatholeConnection();
             process?.Kill(true);
@@ -283,12 +287,68 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
         {
             _clientConnector.EndRatholeConnection();
             _serverConnector.EndRatholeConnection();
-            if(!_serverConnector.Client.IsConnected && !_clientConnector.Client.IsConnected)
+            _ = UpdateConnectionStatusAsync();
+        }
+
+        private async void StatusTimer_Tick(object sender, EventArgs e)
+        {
+            await UpdateConnectionStatusAsync();
+        }
+
+        private async Task UpdateConnectionStatusAsync()
+        {
+            if (_isStatusCheckRunning)
             {
-                RunButton.Enabled = true;
-                StopButton.Enabled = false;
-                pictureBox1.Image = ErrorImage;
+                return;
             }
+
+            _isStatusCheckRunning = true;
+            try
+            {
+                var clientPorts = GetClientPorts();
+                var serverPorts = GetServerPorts();
+
+                var clientTask = Task.Run(() => _clientConnector?.IsRatholeRunning(clientPorts) ?? false);
+                var serverTask = Task.Run(() => _serverConnector?.IsRatholeRunning(serverPorts) ?? false);
+
+                var results = await Task.WhenAll(clientTask, serverTask);
+                var isRunning = results[0] && results[1];
+                UpdateConnectionStatus(isRunning);
+            }
+            finally
+            {
+                _isStatusCheckRunning = false;
+            }
+        }
+
+        private void UpdateConnectionStatus(bool isRunning)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => UpdateConnectionStatus(isRunning));
+                return;
+            }
+
+            StopButton.Enabled = isRunning;
+            RunButton.Enabled = !isRunning;
+            pictureBox1.Image = isRunning ? SuccessImage : ErrorImage;
+            StatusLabel.Text = isRunning ? "Status: Running" : "Status: Stopped";
+        }
+
+        private IEnumerable<int> GetClientPorts()
+        {
+            return _dataObject.Services
+                .Select(service => service.ClientPort)
+                .Select(port => int.TryParse(port, out var parsed) ? parsed : 0)
+                .Where(port => port > 0);
+        }
+
+        private IEnumerable<int> GetServerPorts()
+        {
+            return _dataObject.Services
+                .Select(service => service.ServerPort)
+                .Select(port => int.TryParse(port, out var parsed) ? parsed : 0)
+                .Where(port => port > 0);
         }
     }
 

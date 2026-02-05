@@ -1,4 +1,6 @@
 ﻿
+using System;
+using System.Linq;
 using Renci.SshNet;
 
 namespace PortsAppGui
@@ -61,6 +63,51 @@ namespace PortsAppGui
             }
             
             Client?.Disconnect();
+        }
+
+        public bool IsRatholeRunning(IEnumerable<int> ports)
+        {
+            if (Client == null)
+            {
+                return false;
+            }
+
+            if (!Client.IsConnected)
+            {
+                Client.Connect();
+            }
+
+            var processRunning = false;
+            if (!string.IsNullOrWhiteSpace(ProccessPID))
+            {
+                var pidCheck = Client.RunCommand($"ps -p {ProccessPID} -o comm=");
+                processRunning = pidCheck.ExitStatus == 0 && pidCheck.Result.Trim().Contains("rathole", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (!processRunning)
+            {
+                var pgrepCheck = Client.RunCommand("pgrep -x rathole");
+                processRunning = !string.IsNullOrWhiteSpace(pgrepCheck.Result);
+            }
+
+            var portList = ports?
+                .Where(port => port > 0 && port != 22)
+                .Distinct()
+                .ToArray() ?? Array.Empty<int>();
+
+            if (portList.Length == 0)
+            {
+                return processRunning;
+            }
+
+            var portRegex = string.Join("|", portList);
+            var portCheck = Client.RunCommand($"ss -ltnup 2>/dev/null | grep -E \"rathole\" | grep -E \":({portRegex})\\\\b\"");
+            if (!string.IsNullOrWhiteSpace(portCheck.Result))
+            {
+                return true;
+            }
+
+            return processRunning;
         }
     }
 
