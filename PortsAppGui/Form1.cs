@@ -17,6 +17,7 @@ namespace PortsAppGui
         private SshConnector _serverConnector;
         private readonly Timer _statusTimer;
         private bool _isStatusCheckRunning;
+        private bool _isConnectionActive = false;
 
         private Image SuccessImage = Image.FromFile("./Resources/success.png");
         private Image ErrorImage = Image.FromFile("./Resources/error.png");
@@ -259,6 +260,7 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             _clientConnector.BeginRatholeConnection(_dataObject.Configs.ClientRatholePath + _dataObject.Configs.ClientTomlPath.Split('/')[^1],
                 _dataObject.Configs.ClientRatholePath);
 
+            _isConnectionActive = true;
             _ = UpdateConnectionStatusAsync();
         }
 
@@ -287,12 +289,16 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
         {
             _clientConnector.EndRatholeConnection();
             _serverConnector.EndRatholeConnection();
+            _isConnectionActive = false;
             _ = UpdateConnectionStatusAsync();
         }
 
         private async void StatusTimer_Tick(object sender, EventArgs e)
         {
-            await UpdateConnectionStatusAsync();
+            if (_isConnectionActive)
+            {
+                await UpdateConnectionStatusAsync();
+            }
         }
 
         private async Task UpdateConnectionStatusAsync()
@@ -305,6 +311,11 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             _isStatusCheckRunning = true;
             try
             {
+                if (!_isConnectionActive)
+                {
+                    UpdateConnectionStatus(false);
+                    return;
+                }
                 var clientPorts = GetClientPorts();
                 var serverPorts = GetServerPorts();
 
@@ -314,6 +325,15 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
                 var results = await Task.WhenAll(clientTask, serverTask);
                 var isRunning = results[0] && results[1];
                 UpdateConnectionStatus(isRunning);
+                if (!isRunning && _isConnectionActive)
+                {
+                    _isConnectionActive = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[UpdateConnectionStatus] Error: {ex.Message}");
+                UpdateConnectionStatus(false);
             }
             finally
             {
