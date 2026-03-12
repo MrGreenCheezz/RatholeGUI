@@ -23,7 +23,7 @@ namespace PortsAppGui
             _password = password;
         }
 
-        // Safely connect or reconnect SSH client
+        
         private void EnsureConnected()
         {
             lock (_lockObj)
@@ -32,11 +32,11 @@ namespace PortsAppGui
                 {
                     if (Client == null || !Client.IsConnected)
                     {
-                        // Dispose old client if exists
+                        
                         Client?.Disconnect();
                         Client?.Dispose();
 
-                        // Create new connection
+                        
                         Client = new SshClient(_host, _port, _username, _password);
                         Client.KeepAliveInterval = TimeSpan.FromSeconds(60);
                         Client.Connect();
@@ -51,7 +51,7 @@ namespace PortsAppGui
             }
         }
 
-        // Execute command with automatic reconnection and error handling
+        
         private SshCommand ExecuteCommandSafe(string command, int maxRetries = 2)
         {
             int attempt = 0;
@@ -70,14 +70,14 @@ namespace PortsAppGui
                 {
                     attempt++;
                     Console.WriteLine($"[SSH] Command execution failed (attempt {attempt}/{maxRetries}): {ex.Message}");
-                    Client = null; // Force reconnection on next attempt
+                    Client = null;
 
                     if (attempt >= maxRetries)
                     {
                         throw new Exception($"SSH command failed after {maxRetries} attempts: {ex.Message}", ex);
                     }
 
-                    // Small delay before retry
+                   
                     System.Threading.Thread.Sleep(500);
                 }
             }
@@ -108,19 +108,43 @@ namespace PortsAppGui
 
         public void BeginRatholeConnection(string remoteFilePath, string ratholeFilePath)
         {
-            try
+            var ssh = new SshClient(_host, _port, _username, _password);
+            ssh.KeepAliveInterval = TimeSpan.FromSeconds(60);
+            ssh.Connect();
+
+            
+            if (IsRatholeRunningInternal(ssh))
             {
-                EnsureConnected();
-                var command = "nohup " + ratholeFilePath + "./rathole " + remoteFilePath + " >rathole.log 2>&1 & echo $!";
-                var cmdResult = ExecuteCommandSafe(command);
-                ProccessPID = cmdResult.Result.Trim();
-                Console.WriteLine($"[SSH] Rathole process started with PID: {ProccessPID}");
+                
+                Client = ssh;
+                
+                var pgrepCheck = ssh.RunCommand("pgrep -x rathole");
+                if (!string.IsNullOrWhiteSpace(pgrepCheck.Result))
+                {
+                    ProccessPID = pgrepCheck.Result.Trim().Split('\n')[0];
+                }
+                return;
             }
-            catch (Exception ex)
+
+            var command = "nohup " + ratholeFilePath + "./rathole " + remoteFilePath + " >rathole.log 2>&1 & echo $!";
+            var cmdResult = ssh.RunCommand(command);
+            ProccessPID = cmdResult.Result.Trim();
+            Client = ssh;
+        }
+
+        private bool IsRatholeRunningInternal(SshClient ssh)
+        {
+            if (!string.IsNullOrWhiteSpace(ProccessPID))
             {
-                Console.WriteLine($"[SSH] Failed to start Rathole: {ex.Message}");
-                throw;
+                var pidCheck = ssh.RunCommand($"ps -p {ProccessPID} -o comm=");
+                if (pidCheck.ExitStatus == 0 && pidCheck.Result.Trim().Contains("rathole", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
+
+            var pgrepCheck = ssh.RunCommand("pgrep -x rathole");
+            return !string.IsNullOrWhiteSpace(pgrepCheck.Result);
         }
 
         public void EndRatholeConnection()
@@ -166,12 +190,12 @@ namespace PortsAppGui
         {
             try
             {
-                // Ensure we have a valid connection
+                
                 EnsureConnected();
 
                 var processRunning = false;
 
-                // Check by PID first if we have one
+                
                 if (!string.IsNullOrWhiteSpace(ProccessPID))
                 {
                     try
@@ -185,7 +209,7 @@ namespace PortsAppGui
                     }
                 }
 
-                // If not running by PID, check by process name
+                
                 if (!processRunning)
                 {
                     try
@@ -199,7 +223,7 @@ namespace PortsAppGui
                     }
                 }
 
-                // Check ports if we have them
+               
                 var portList = ports?
                     .Where(port => port > 0 && port != 22)
                     .Distinct()
@@ -227,7 +251,7 @@ namespace PortsAppGui
             catch (Exception ex)
             {
                 Console.WriteLine($"[SSH] IsRatholeRunning failed: {ex.Message}");
-                return false; // Safely return false instead of crashing
+                return false; 
             }
         }
     }
