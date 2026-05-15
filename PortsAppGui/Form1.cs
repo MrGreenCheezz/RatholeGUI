@@ -16,21 +16,23 @@ namespace PortsAppGui
         private SshConnector _clientConnector;
         private SshConnector _serverConnector;
         private readonly Timer _statusTimer;
-        private bool _isStatusCheckRunning;
 
         private Image SuccessImage = Image.FromFile("./Resources/success.png");
         private Image ErrorImage = Image.FromFile("./Resources/error.png");
         private bool _isFreshStart = false;
+        private bool _clientBinaryOk;
+        private bool _serverBinaryOk;
+        private bool _clientSshFailed;
+        private bool _serverSshFailed;
+
         public Form1()
         {
             InitializeComponent();
             this.Load += MainForm_Load;
-            _statusTimer = new Timer
-            {
-                Interval = 3000
-            };
-            _statusTimer.Tick += StatusTimer_Tick;
+            _statusTimer = new Timer { Interval = 3000 };
+            _statusTimer.Tick += (s, e) => RefreshStatus();
         }
+
         private void MainForm_Load(object sender, EventArgs e)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -62,8 +64,8 @@ namespace PortsAppGui
                 var serviceControl = new ServiceControl();
                 serviceControl.SetupControl(service);
                 serviceControl.SetIndex(i);
-                serviceControl.On_ExitButtonClicked += ControlDeleted;
-                serviceControl.Location = new Point(0, i * (110));
+                serviceControl.ExitClicked += ControlDeleted;
+                serviceControl.Location = new Point(0, i * 130);
                 panel1.Controls.Add(serviceControl);
             }
 
@@ -75,19 +77,70 @@ namespace PortsAppGui
                 int.Parse(_dataObject.Configs.ServerAdress.Split(':')[1]), _dataObject.Configs.ServerUsername,
                 _dataObject.Configs.ServerPassword);
 
-            _statusTimer.Start();
+            StatusLabel.Text = "Status: checking rathole...";
+            RunButton.Enabled = false;
+            Task.Run(() =>
+            {
+                CheckRatholeBinaries();
+                BeginInvoke(() =>
+                {
+                    if (_clientBinaryOk && _serverBinaryOk && !_clientSshFailed && !_serverSshFailed)
+                        RefreshStatus();
+                    else
+                        ApplyBinaryStatus();
+                    _statusTimer.Start();
+                });
+            });
+        }
+
+        private void CheckRatholeBinaries()
+        {
+            var clientResult = _clientConnector.RatholeBinaryExists(_dataObject.Configs.ClientRatholePath);
+            var serverResult = _serverConnector.RatholeBinaryExists(_dataObject.Configs.ServerRatholePath);
+
+            _clientSshFailed = clientResult == null;
+            _serverSshFailed = serverResult == null;
+            _clientBinaryOk = clientResult == true;
+            _serverBinaryOk = serverResult == true;
+        }
+
+        private void ApplyBinaryStatus()
+        {
+            if (_clientSshFailed || _serverSshFailed)
+            {
+                StatusLabel.Text = "Status: cannot check rathole (SSH error)";
+            }
+            else if (!_clientBinaryOk && !_serverBinaryOk)
+            {
+                StatusLabel.Text = "Status: rathole not found (client, server)";
+            }
+            else if (!_clientBinaryOk)
+            {
+                StatusLabel.Text = "Status: rathole not found (client)";
+            }
+            else if (!_serverBinaryOk)
+            {
+                StatusLabel.Text = "Status: rathole not found (server)";
+            }
+            else
+            {
+                return;
+            }
+
+            pictureBox1.Image = ErrorImage;
+            RunButton.Enabled = false;
+            StopButton.Enabled = false;
         }
 
         public JsonDataClass LoadJsonFromDataFile()
         {
-            var fileExistence = File.Exists(Program.DataFilePath);
             if (!File.Exists(Program.DataFilePath))
             {
                 var tmpFile = File.Create(Program.DataFilePath);
                 tmpFile.Close();
                 _dataObject = new JsonDataClass();
                 _dataObject.Configs = new ConfigStore();
-                _dataObject.Services = new List<Service>();               
+                _dataObject.Services = new List<Service>();
                 SaveData();
                 _isFreshStart = true;
                 return _dataObject;
@@ -96,8 +149,7 @@ namespace PortsAppGui
             try
             {
                 string jsonFromFile = File.ReadAllText(Program.DataFilePath);
-                var data = JsonSerializer.Deserialize<JsonDataClass>(jsonFromFile) ?? new JsonDataClass();
-
+                var data = JsonSerializer.Deserialize<JsonDataClass>(jsonFromFile);
 
                 if (data.Services == null)
                     data.Services = new List<Service>();
@@ -107,7 +159,7 @@ namespace PortsAppGui
                 return data;
             }
             catch (Exception)
-            {          
+            {
                 throw new FileLoadException("No file");
             }
         }
@@ -130,8 +182,8 @@ namespace PortsAppGui
             _dataObject.Services.Add(service);
             var index = _dataObject.Services.IndexOf(service);
             serviceControl.SetIndex(index);
-            serviceControl.On_ExitButtonClicked += ControlDeleted;
-            serviceControl.Location = new Point(5, index * (110));
+            serviceControl.ExitClicked += ControlDeleted;
+            serviceControl.Location = new Point(5, index * 130);
             panel1.Controls.Add(serviceControl);
             RearangeElements(index);
             panel1.ResumeLayout(true);
@@ -144,11 +196,11 @@ namespace PortsAppGui
             for (int i = 0; i < controlsArray.Count; i++)
             {
                 var serviceControl = controlsArray[i];
-                serviceControl.Location = new Point(0, i * (110));
+                serviceControl.Location = new Point(0, i * 130);
                 serviceControl.Index = i;
             }
-
         }
+
         public void SaveData()
         {
             _dataObject.Configs.ClientTomlPath = ClientPathTextBox.Text;
@@ -164,11 +216,6 @@ namespace PortsAppGui
             File.WriteAllText(Program.DataFilePath, dataToWrite);
         }
 
-        private void panel1_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
         private void AddRuleButton_Click(object sender, EventArgs e)
         {
             AddControl();
@@ -178,7 +225,6 @@ namespace PortsAppGui
         {
             SaveData();
         }
-
 
         public void WriteRulesToFile()
         {
@@ -223,24 +269,36 @@ keepalive_interval = 8
 type = ""tcp""
 token = ""{data.ServiceToken}""
 local_addr = ""{data.ClientAdress}:{data.ClientPort}""
+nodelay = {data.NoDelay.ToString().ToLower()}
 
-[client.services.{data.ServiceName}_udp]
+";
+                if (data.UdpEnabled)
+                {
+                    clienttext += $@"[client.services.{data.ServiceName}_udp]
 type = ""udp""
 token = ""{data.ServiceToken}_udp""
 local_addr = ""{data.ClientAdress}:{data.ClientPort}""
 
 ";
+                }
+
                 string servertext = $@"[server.services.{data.ServiceName}]
 type = ""tcp""
 token = ""{data.ServiceToken}""
 bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
+nodelay = {data.NoDelay.ToString().ToLower()}
 
-[server.services.{data.ServiceName}_udp]
+";
+                if (data.UdpEnabled)
+                {
+                    servertext += $@"[server.services.{data.ServiceName}_udp]
 type = ""udp""
 token = ""{data.ServiceToken}_udp""
 bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
 ";
+                }
+
                 File.AppendAllText(clientFilePath, clienttext, Encoding.UTF8);
                 File.AppendAllText(serverFilePath, servertext, Encoding.UTF8);
             }
@@ -248,6 +306,13 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
 
         private void RunButton_Click(object sender, EventArgs e)
         {
+            CheckRatholeBinaries();
+            if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
+            {
+                ApplyBinaryStatus();
+                return;
+            }
+
             WriteRulesToFile();
 
             _serverConnector.SendFile(_dataObject.Configs.ServerTomlPath,
@@ -259,23 +324,10 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
             _clientConnector.BeginRatholeConnection(_dataObject.Configs.ClientRatholePath + _dataObject.Configs.ClientTomlPath.Split('/')[^1],
                 _dataObject.Configs.ClientRatholePath);
 
-            _ = UpdateConnectionStatusAsync();
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
+            RefreshStatus();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            _statusTimer.Stop();
-            _clientConnector?.EndRatholeConnection();
-            _serverConnector?.EndRatholeConnection();
-            process?.Kill(true);
-        }
-
-        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             _statusTimer.Stop();
             _clientConnector?.EndRatholeConnection();
@@ -287,68 +339,25 @@ bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
         {
             _clientConnector.EndRatholeConnection();
             _serverConnector.EndRatholeConnection();
-            _ = UpdateConnectionStatusAsync();
+            RefreshStatus();
         }
 
-        private async void StatusTimer_Tick(object sender, EventArgs e)
+        private void RefreshStatus()
         {
-            await UpdateConnectionStatusAsync();
-        }
-
-        private async Task UpdateConnectionStatusAsync()
-        {
-            if (_isStatusCheckRunning)
+            if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
             {
+                ApplyBinaryStatus();
                 return;
             }
 
-            _isStatusCheckRunning = true;
-            try
-            {
-                var clientPorts = GetClientPorts();
-                var serverPorts = GetServerPorts();
+            bool clientUp = _clientConnector != null && _clientConnector.IsRatholeRunning();
+            bool serverUp = _serverConnector != null && _serverConnector.IsRatholeRunning();
+            bool running = clientUp && serverUp;
 
-                var clientTask = Task.Run(() => _clientConnector?.IsRatholeRunning(clientPorts) ?? false);
-                var serverTask = Task.Run(() => _serverConnector?.IsRatholeRunning(serverPorts) ?? false);
-
-                var results = await Task.WhenAll(clientTask, serverTask);
-                var isRunning = results[0] && results[1];
-                UpdateConnectionStatus(isRunning);
-            }
-            finally
-            {
-                _isStatusCheckRunning = false;
-            }
-        }
-
-        private void UpdateConnectionStatus(bool isRunning)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(() => UpdateConnectionStatus(isRunning));
-                return;
-            }
-
-            StopButton.Enabled = isRunning;
-            RunButton.Enabled = !isRunning;
-            pictureBox1.Image = isRunning ? SuccessImage : ErrorImage;
-            StatusLabel.Text = isRunning ? "Status: Running" : "Status: Stopped";
-        }
-
-        private IEnumerable<int> GetClientPorts()
-        {
-            return _dataObject.Services
-                .Select(service => service.ClientPort)
-                .Select(port => int.TryParse(port, out var parsed) ? parsed : 0)
-                .Where(port => port > 0);
-        }
-
-        private IEnumerable<int> GetServerPorts()
-        {
-            return _dataObject.Services
-                .Select(service => service.ServerPort)
-                .Select(port => int.TryParse(port, out var parsed) ? parsed : 0)
-                .Where(port => port > 0);
+            StopButton.Enabled = running;
+            RunButton.Enabled = !running;
+            pictureBox1.Image = running ? SuccessImage : ErrorImage;
+            StatusLabel.Text = running ? "Status: Running" : "Status: Stopped";
         }
     }
 

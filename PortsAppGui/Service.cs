@@ -1,9 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace PortsAppGui
 {
     public class Service
@@ -14,5 +8,7 @@ namespace PortsAppGui
         public string ClientPort { get; set; }
         public string ServerAdress { get; set; }
         public string ServerPort { get; set; }
+        public bool NoDelay { get; set; } = true;
+        public bool UdpEnabled { get; set; } = true;
     }
 }

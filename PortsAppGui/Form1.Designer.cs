@@ -1,4 +1,4 @@
-﻿namespace PortsAppGui
+namespace PortsAppGui
 {
     partial class Form1
     {
@@ -82,7 +82,7 @@
             // 
             // AddRuleButton
             // 
-            AddRuleButton.Location = new Point(524, 70);
+            AddRuleButton.Location = new Point(639, 71);
             AddRuleButton.Name = "AddRuleButton";
             AddRuleButton.Size = new Size(129, 23);
             AddRuleButton.TabIndex = 5;
@@ -92,7 +92,7 @@
             // 
             // SaveRulesButton
             // 
-            SaveRulesButton.Location = new Point(524, 99);
+            SaveRulesButton.Location = new Point(639, 100);
             SaveRulesButton.Name = "SaveRulesButton";
             SaveRulesButton.Size = new Size(129, 23);
             SaveRulesButton.TabIndex = 6;
@@ -102,7 +102,7 @@
             // 
             // RunButton
             // 
-            RunButton.Location = new Point(524, 12);
+            RunButton.Location = new Point(639, 13);
             RunButton.Name = "RunButton";
             RunButton.Size = new Size(129, 23);
             RunButton.TabIndex = 8;
@@ -118,7 +118,7 @@
             panel1.Location = new Point(12, 137);
             panel1.Name = "panel1";
             panel1.Padding = new Padding(15, 5, 0, 0);
-            panel1.Size = new Size(670, 320);
+            panel1.Size = new Size(756, 320);
             panel1.TabIndex = 9;
             // 
             // ErrorText
@@ -135,7 +135,7 @@
             // StopButton
             // 
             StopButton.Enabled = false;
-            StopButton.Location = new Point(524, 41);
+            StopButton.Location = new Point(639, 42);
             StopButton.Name = "StopButton";
             StopButton.Size = new Size(129, 23);
             StopButton.TabIndex = 10;
@@ -146,7 +146,7 @@
             // pictureBox1
             // 
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(353, 27);
+            pictureBox1.Location = new Point(408, 27);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(80, 80);
             pictureBox1.TabIndex = 11;
@@ -155,9 +155,9 @@
             // StatusLabel
             // 
             StatusLabel.AutoSize = true;
-            StatusLabel.Location = new Point(353, 110);
+            StatusLabel.Location = new Point(400, 108);
             StatusLabel.Name = "StatusLabel";
-            StatusLabel.Size = new Size(87, 15);
+            StatusLabel.Size = new Size(96, 15);
             StatusLabel.TabIndex = 12;
             StatusLabel.Text = "Status: Unknown";
             // 
@@ -165,7 +165,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(694, 469);
+            ClientSize = new Size(780, 469);
             Controls.Add(StatusLabel);
             Controls.Add(pictureBox1);
             Controls.Add(StopButton);
@@ -183,8 +183,6 @@
             Name = "Form1";
             Text = "RatholeGUI_App";
             FormClosing += Form1_FormClosing;
-            FormClosed += Form1_FormClosed;
-            Load += Form1_Load;
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();

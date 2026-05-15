@@ -1,0 +1,136 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\RatholeGUI\\PortsAppGui\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|e:\\ratholegui\\portsappgui\\servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:servicecontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|E:\\RatholeGUI\\PortsAppGui\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|e:\\ratholegui\\portsappgui\\sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:sshconnector.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|e:\\ratholegui\\portsappgui\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|e:\\ratholegui\\portsappgui\\data.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:data.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|e:\\ratholegui\\portsappgui\\form1.resx||{81828910-B8B3-4D2B-99A3-067027C180C1}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:form1.resx||{81828910-B8B3-4D2B-99A3-067027C180C1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|e:\\ratholegui\\portsappgui\\configstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9D06567E-F183-461A-9C88-32EC24C9D516}|PortsAppGui.csproj|solutionrelative:configstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ServiceControl.cs [Design]",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\ServiceControl.cs",
+              "RelativeDocumentMoniker": "ServiceControl.cs",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\ServiceControl.cs [Design]",
+              "RelativeToolTip": "ServiceControl.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-15T11:12:54.205Z",
+              "EditorCaption": " [Design]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "data.json",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\data.json",
+              "RelativeDocumentMoniker": "data.json",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\data.json",
+              "RelativeToolTip": "data.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-04-19T11:13:44.462Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Form1.resx",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\Form1.resx",
+              "RelativeDocumentMoniker": "Form1.resx",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\Form1.resx",
+              "RelativeToolTip": "Form1.resx",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001005|",
+              "WhenOpened": "2026-03-28T21:17:20.302Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SshConnector.cs",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\SshConnector.cs",
+              "RelativeDocumentMoniker": "SshConnector.cs",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\SshConnector.cs",
+              "RelativeToolTip": "SshConnector.cs",
+              "ViewState": "AgIAAGMAAAAAAAAAAAAWwCwAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-16T14:21:29.017Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Form1.cs [Design]",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\Form1.cs [Design]",
+              "RelativeToolTip": "Form1.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-16T14:11:22.976Z",
+              "EditorCaption": " [Design]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AgIAABYBAAAAAAAAAAAQwCABAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-16T14:00:48.023Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ConfigStore.cs",
+              "DocumentMoniker": "E:\\RatholeGUI\\PortsAppGui\\ConfigStore.cs",
+              "RelativeDocumentMoniker": "ConfigStore.cs",
+              "ToolTip": "E:\\RatholeGUI\\PortsAppGui\\ConfigStore.cs",
+              "RelativeToolTip": "ConfigStore.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-16T14:00:42.694Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

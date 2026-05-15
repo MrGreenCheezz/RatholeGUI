@@ -1,0 +1,96 @@
+{
+  "Configs": {
+    "ServerTomlPath": "testClient.toml",
+    "ClientTomlPath": "testServer.toml",
+    "ServerAdress": "45.136.57.19:22",
+    "ClientAdress": "127.0.0.1:22",
+    "ServerRatholePath": "/home/rathole/",
+    "ClientRatholePath": "/home/greencheezz/rathole/",
+    "ServerUsername": "root",
+    "ClientUsername": "greencheezz",
+    "ServerPassword": "San94iki",
+    "ClientPassword": "San94iki"
+  },
+  "Services": [
+    {
+      "ServiceName": "smarts",
+      "ServiceToken": "smarts_10501",
+      "ClientAdress": "192.168.0.142",
+      "ClientPort": "10501",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "10501"
+    },
+    {
+      "ServiceName": "smarts_shop",
+      "ServiceToken": "shop_9000",
+      "ClientAdress": "192.168.0.142",
+      "ClientPort": "9000",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "9000"
+    },
+    {
+      "ServiceName": "cs2mod2",
+      "ServiceToken": "cs2mod2",
+      "ClientAdress": "192.168.0.133",
+      "ClientPort": "27016",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "27016"
+    },
+    {
+      "ServiceName": "cs2mod3",
+      "ServiceToken": "cs2mod3",
+      "ClientAdress": "192.168.0.133",
+      "ClientPort": "27015",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "27015"
+    },
+    {
+      "ServiceName": "cs2mod4",
+      "ServiceToken": "cs2mod4",
+      "ClientAdress": "172.23.179.4",
+      "ClientPort": "1313",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "1313"
+    },
+    {
+      "ServiceName": "VintageGame",
+      "ServiceToken": "VintageGame",
+      "ClientAdress": "192.168.0.133",
+      "ClientPort": "443",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "443"
+    },
+    {
+      "ServiceName": "AuthWowServer",
+      "ServiceToken": "AuthWowServer",
+      "ClientAdress": "172.30.243.199",
+      "ClientPort": "80",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "80"
+    },
+    {
+      "ServiceName": "GameWowServer",
+      "ServiceToken": "GameWowServer",
+      "ClientAdress": "172.30.243.199",
+      "ClientPort": "443",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "443"
+    },
+    {
+      "ServiceName": "Terraria",
+      "ServiceToken": "Terraria",
+      "ClientAdress": "172.30.243.199",
+      "ClientPort": "9877",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "9877"
+    },
+    {
+      "ServiceName": "TestForFileDownload",
+      "ServiceToken": "TestForFileDownload",
+      "ClientAdress": "172.30.243.199",
+      "ClientPort": "8080",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "8080"
+    }
+  ]
+}

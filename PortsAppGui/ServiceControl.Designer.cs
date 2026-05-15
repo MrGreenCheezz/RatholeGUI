@@ -1,4 +1,4 @@
-﻿namespace PortsAppGui
+namespace PortsAppGui
 {
     partial class ServiceControl
     {
@@ -43,6 +43,8 @@
             label7 = new Label();
             label8 = new Label();
             button1 = new Button();
+            NoDelayCheckBox = new CheckBox();
+            UdpCheckBox = new CheckBox();
             SuspendLayout();
             // 
             // label1
@@ -60,7 +62,6 @@
             ServiceNameTextBox.Name = "ServiceNameTextBox";
             ServiceNameTextBox.Size = new Size(163, 23);
             ServiceNameTextBox.TabIndex = 1;
-            ServiceNameTextBox.TextChanged += textBox1_TextChanged;
             // 
             // ServiceTokenTextBox
             // 
@@ -113,7 +114,7 @@
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new Point(472, 21);
+            label5.Location = new Point(501, 21);
             label5.Name = "label5";
             label5.Size = new Size(10, 15);
             label5.TabIndex = 8;
@@ -122,7 +123,7 @@
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new Point(472, 65);
+            label6.Location = new Point(501, 65);
             label6.Name = "label6";
             label6.Size = new Size(10, 15);
             label6.TabIndex = 9;
@@ -130,14 +131,14 @@
             // 
             // ClientPortTextBox
             // 
-            ClientPortTextBox.Location = new Point(488, 18);
+            ClientPortTextBox.Location = new Point(544, 18);
             ClientPortTextBox.Name = "ClientPortTextBox";
             ClientPortTextBox.Size = new Size(99, 23);
             ClientPortTextBox.TabIndex = 10;
             // 
             // ServerPortTextBox
             // 
-            ServerPortTextBox.Location = new Point(488, 62);
+            ServerPortTextBox.Location = new Point(544, 62);
             ServerPortTextBox.Name = "ServerPortTextBox";
             ServerPortTextBox.Size = new Size(99, 23);
             ServerPortTextBox.TabIndex = 11;
@@ -145,7 +146,7 @@
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new Point(488, 0);
+            label7.Location = new Point(544, 0);
             label7.Name = "label7";
             label7.Size = new Size(63, 15);
             label7.TabIndex = 12;
@@ -154,7 +155,7 @@
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new Point(488, 44);
+            label8.Location = new Point(544, 44);
             label8.Name = "label8";
             label8.Size = new Size(64, 15);
             label8.TabIndex = 13;
@@ -162,7 +163,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(594, -1);
+            button1.Location = new Point(679, -1);
             button1.Name = "button1";
             button1.Size = new Size(22, 25);
             button1.TabIndex = 14;
@@ -170,11 +171,33 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
+            // NoDelayCheckBox
+            // 
+            NoDelayCheckBox.AutoSize = true;
+            NoDelayCheckBox.Location = new Point(198, 91);
+            NoDelayCheckBox.Name = "NoDelayCheckBox";
+            NoDelayCheckBox.Size = new Size(71, 19);
+            NoDelayCheckBox.TabIndex = 15;
+            NoDelayCheckBox.Text = "NoDelay";
+            NoDelayCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // UdpCheckBox
+            // 
+            UdpCheckBox.AutoSize = true;
+            UdpCheckBox.Location = new Point(310, 91);
+            UdpCheckBox.Name = "UdpCheckBox";
+            UdpCheckBox.Size = new Size(87, 19);
+            UdpCheckBox.TabIndex = 16;
+            UdpCheckBox.Text = "Enable UDP";
+            UdpCheckBox.UseVisualStyleBackColor = true;
+            // 
             // ServiceControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BorderStyle = BorderStyle.FixedSingle;
+            Controls.Add(NoDelayCheckBox);
+            Controls.Add(UdpCheckBox);
             Controls.Add(button1);
             Controls.Add(label8);
             Controls.Add(label7);
@@ -191,8 +214,7 @@
             Controls.Add(ServiceNameTextBox);
             Controls.Add(label1);
             Name = "ServiceControl";
-            Size = new Size(615, 98);
-            Load += ServiceControl_Load;
+            Size = new Size(700, 120);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -214,5 +236,7 @@
         private Label label8;
         public TextBox ServiceNameTextBox;
         public Button button1;
+        public CheckBox NoDelayCheckBox;
+        public CheckBox UdpCheckBox;
     }
 }

@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 using System.Windows.Forms;
 
 namespace PortsAppGui
@@ -13,22 +6,14 @@ namespace PortsAppGui
     public partial class ServiceControl : UserControl
     {
         public int Index;
-        public delegate void ExitClicked(int index, ServiceControl service);
-        public  event ExitClicked? On_ExitButtonClicked;
+        public delegate void ExitClickedHandler(int index, ServiceControl service);
+        public event ExitClickedHandler ExitClicked;
+
         public ServiceControl()
         {
             InitializeComponent();
         }
 
-        private void ServiceControl_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
         public void SetupControl(Service service)
         {
             ServiceNameTextBox.Text = service.ServiceName;
@@ -37,6 +22,8 @@ namespace PortsAppGui
             ServerAdressTextBox.Text = service.ServerAdress;
             ClientPortTextBox.Text = service.ClientPort;
             ServerPortTextBox.Text = service.ServerPort;
+            NoDelayCheckBox.Checked = service.NoDelay;
+            UdpCheckBox.Checked = service.UdpEnabled;
         }
 
         public Service GetServiceData()
@@ -48,9 +35,11 @@ namespace PortsAppGui
             service.ServerAdress = ServerAdressTextBox.Text;
             service.ClientPort = ClientPortTextBox.Text;
             service.ServerPort = ServerPortTextBox.Text;
+            service.NoDelay = NoDelayCheckBox.Checked;
+            service.UdpEnabled = UdpCheckBox.Checked;
             return service;
+        }
 
-         }
         public void SetIndex(int index)
         {
             this.Index = index;
@@ -58,7 +47,7 @@ namespace PortsAppGui
 
         private void button1_Click(object sender, EventArgs e)
         {
-            On_ExitButtonClicked?.Invoke(Index, this);
+            ExitClicked?.Invoke(Index, this);
         }
     }
 }
