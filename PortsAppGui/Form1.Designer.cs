@@ -30,10 +30,6 @@ namespace PortsAppGui
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            label1 = new Label();
-            ClientPathTextBox = new TextBox();
-            label2 = new Label();
-            ServerPathTextBox = new TextBox();
             AddRuleButton = new Button();
             SaveRulesButton = new Button();
             RunButton = new Button();
@@ -42,47 +38,17 @@ namespace PortsAppGui
             StopButton = new Button();
             pictureBox1 = new PictureBox();
             StatusLabel = new Label();
+            SettingsButton = new Button();
+            TestSshButton = new Button();
+            PreviewTomlButton = new Button();
+            LogsButton = new Button();
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(12, 9);
-            label1.Name = "label1";
-            label1.Size = new Size(112, 15);
-            label1.TabIndex = 0;
-            label1.Text = "Client toml file path";
-            // 
-            // ClientPathTextBox
-            // 
-            ClientPathTextBox.Location = new Point(12, 27);
-            ClientPathTextBox.Name = "ClientPathTextBox";
-            ClientPathTextBox.Size = new Size(267, 23);
-            ClientPathTextBox.TabIndex = 1;
-            ClientPathTextBox.Text = "/here/path/to/file";
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new Point(12, 66);
-            label2.Name = "label2";
-            label2.Size = new Size(113, 15);
-            label2.TabIndex = 2;
-            label2.Text = "Server toml file path";
-            // 
-            // ServerPathTextBox
-            // 
-            ServerPathTextBox.Location = new Point(12, 84);
-            ServerPathTextBox.Name = "ServerPathTextBox";
-            ServerPathTextBox.Size = new Size(267, 23);
-            ServerPathTextBox.TabIndex = 3;
-            ServerPathTextBox.Text = "/here/path/to/file";
-            // 
             // AddRuleButton
             // 
-            AddRuleButton.Location = new Point(639, 71);
+            AddRuleButton.Location = new Point(539, 71);
             AddRuleButton.Name = "AddRuleButton";
             AddRuleButton.Size = new Size(129, 23);
             AddRuleButton.TabIndex = 5;
@@ -92,7 +58,7 @@ namespace PortsAppGui
             // 
             // SaveRulesButton
             // 
-            SaveRulesButton.Location = new Point(639, 100);
+            SaveRulesButton.Location = new Point(539, 100);
             SaveRulesButton.Name = "SaveRulesButton";
             SaveRulesButton.Size = new Size(129, 23);
             SaveRulesButton.TabIndex = 6;
@@ -102,7 +68,7 @@ namespace PortsAppGui
             // 
             // RunButton
             // 
-            RunButton.Location = new Point(639, 13);
+            RunButton.Location = new Point(539, 13);
             RunButton.Name = "RunButton";
             RunButton.Size = new Size(129, 23);
             RunButton.TabIndex = 8;
@@ -118,7 +84,7 @@ namespace PortsAppGui
             panel1.Location = new Point(12, 137);
             panel1.Name = "panel1";
             panel1.Padding = new Padding(15, 5, 0, 0);
-            panel1.Size = new Size(756, 320);
+            panel1.Size = new Size(656, 320);
             panel1.TabIndex = 9;
             // 
             // ErrorText
@@ -135,7 +101,7 @@ namespace PortsAppGui
             // StopButton
             // 
             StopButton.Enabled = false;
-            StopButton.Location = new Point(639, 42);
+            StopButton.Location = new Point(539, 42);
             StopButton.Name = "StopButton";
             StopButton.Size = new Size(129, 23);
             StopButton.TabIndex = 10;
@@ -146,7 +112,7 @@ namespace PortsAppGui
             // pictureBox1
             // 
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(408, 27);
+            pictureBox1.Location = new Point(28, 14);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(80, 80);
             pictureBox1.TabIndex = 11;
@@ -155,17 +121,61 @@ namespace PortsAppGui
             // StatusLabel
             // 
             StatusLabel.AutoSize = true;
-            StatusLabel.Location = new Point(400, 108);
+            StatusLabel.Location = new Point(28, 108);
             StatusLabel.Name = "StatusLabel";
             StatusLabel.Size = new Size(96, 15);
             StatusLabel.TabIndex = 12;
             StatusLabel.Text = "Status: Unknown";
             // 
+            // SettingsButton
+            // 
+            SettingsButton.Location = new Point(390, 13);
+            SettingsButton.Name = "SettingsButton";
+            SettingsButton.Size = new Size(129, 23);
+            SettingsButton.TabIndex = 13;
+            SettingsButton.Text = "Settings";
+            SettingsButton.UseVisualStyleBackColor = true;
+            SettingsButton.Click += SettingsButton_Click;
+            // 
+            // TestSshButton
+            // 
+            TestSshButton.Location = new Point(390, 42);
+            TestSshButton.Name = "TestSshButton";
+            TestSshButton.Size = new Size(129, 23);
+            TestSshButton.TabIndex = 14;
+            TestSshButton.Text = "Test SSH";
+            TestSshButton.UseVisualStyleBackColor = true;
+            TestSshButton.Click += TestSshButton_Click;
+            // 
+            // PreviewTomlButton
+            // 
+            PreviewTomlButton.Location = new Point(390, 71);
+            PreviewTomlButton.Name = "PreviewTomlButton";
+            PreviewTomlButton.Size = new Size(129, 23);
+            PreviewTomlButton.TabIndex = 15;
+            PreviewTomlButton.Text = "Preview TOML";
+            PreviewTomlButton.UseVisualStyleBackColor = true;
+            PreviewTomlButton.Click += PreviewTomlButton_Click;
+            // 
+            // LogsButton
+            // 
+            LogsButton.Location = new Point(390, 100);
+            LogsButton.Name = "LogsButton";
+            LogsButton.Size = new Size(129, 23);
+            LogsButton.TabIndex = 16;
+            LogsButton.Text = "Logs";
+            LogsButton.UseVisualStyleBackColor = true;
+            LogsButton.Click += LogsButton_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(780, 469);
+            ClientSize = new Size(680, 469);
+            Controls.Add(LogsButton);
+            Controls.Add(PreviewTomlButton);
+            Controls.Add(TestSshButton);
+            Controls.Add(SettingsButton);
             Controls.Add(StatusLabel);
             Controls.Add(pictureBox1);
             Controls.Add(StopButton);
@@ -173,10 +183,6 @@ namespace PortsAppGui
             Controls.Add(RunButton);
             Controls.Add(SaveRulesButton);
             Controls.Add(AddRuleButton);
-            Controls.Add(ServerPathTextBox);
-            Controls.Add(label2);
-            Controls.Add(ClientPathTextBox);
-            Controls.Add(label1);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
@@ -191,11 +197,6 @@ namespace PortsAppGui
         }
 
         #endregion
-
-        private Label label1;
-        private TextBox ClientPathTextBox;
-        private Label label2;
-        private TextBox ServerPathTextBox;
         private Button AddRuleButton;
         private Button SaveRulesButton;
         private Button RunButton;
@@ -204,5 +205,9 @@ namespace PortsAppGui
         private Label ErrorText;
         private PictureBox pictureBox1;
         private Label StatusLabel;
+        private Button SettingsButton;
+        private Button TestSshButton;
+        private Button PreviewTomlButton;
+        private Button LogsButton;
     }
 }

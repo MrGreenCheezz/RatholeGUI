@@ -1,0 +1,26 @@
+{
+  "Configs": {
+    "ServerTomlPath": "server.toml",
+    "ClientTomlPath": "client.toml",
+    "ServerAdress": "YOUR_SERVER_HOST:22",
+    "ClientAdress": "YOUR_CLIENT_HOST:22",
+    "ServerRatholePath": "/home/rathole/",
+    "ClientRatholePath": "/home/user/rathole/",
+    "ServerUsername": "root",
+    "ClientUsername": "user",
+    "ServerPassword": "",
+    "ClientPassword": ""
+  },
+  "Services": [
+    {
+      "ServiceName": "example",
+      "ServiceToken": "change_me",
+      "ClientAdress": "127.0.0.1",
+      "ClientPort": "8080",
+      "ServerAdress": "0.0.0.0",
+      "ServerPort": "8080",
+      "NoDelay": true,
+      "UdpEnabled": false
+    }
+  ]
+}

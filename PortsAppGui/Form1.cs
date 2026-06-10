@@ -11,74 +11,73 @@ namespace PortsAppGui
 {
     public partial class Form1 : Form
     {
-        private Process process;
-        private JsonDataClass _dataObject;
-        private SshConnector _clientConnector;
-        private SshConnector _serverConnector;
+        private Process? process;
+        private JsonDataClass _dataObject = new();
+        private SshConnector? _clientConnector;
+        private SshConnector? _serverConnector;
         private readonly Timer _statusTimer;
+        private readonly NotifyIcon _trayIcon;
+        private readonly ContextMenuStrip _trayMenu;
 
-        private Image SuccessImage = Image.FromFile("./Resources/success.png");
-        private Image ErrorImage = Image.FromFile("./Resources/error.png");
-        private bool _isFreshStart = false;
+        private readonly Image SuccessImage = Image.FromFile("./Resources/success.png");
+        private readonly Image ErrorImage = Image.FromFile("./Resources/error.png");
+        private bool _isFreshStart;
         private bool _clientBinaryOk;
         private bool _serverBinaryOk;
         private bool _clientSshFailed;
         private bool _serverSshFailed;
+        private bool _uiLoaded;
+        private bool _isClosingFromTray;
 
         public Form1()
         {
             InitializeComponent();
             this.Load += MainForm_Load;
+            Resize += Form1_Resize;
+
             _statusTimer = new Timer { Interval = 3000 };
             _statusTimer.Tick += (s, e) => RefreshStatus();
+
+            _trayMenu = new ContextMenuStrip();
+            _trayMenu.Items.Add("Open", null, (_, _) => ShowFromTray());
+            _trayMenu.Items.Add("Run", null, (_, _) => RunButton.PerformClick());
+            _trayMenu.Items.Add("Stop", null, (_, _) => StopButton.PerformClick());
+            _trayMenu.Items.Add("Exit", null, (_, _) =>
+            {
+                _isClosingFromTray = true;
+                Close();
+            });
+
+            _trayIcon = new NotifyIcon
+            {
+                Text = "RatholeGUI",
+                Icon = Icon,
+                ContextMenuStrip = _trayMenu,
+                Visible = true
+            };
+            _trayIcon.DoubleClick += (_, _) => ShowFromTray();
         }
 
-        private void MainForm_Load(object sender, EventArgs e)
+        private void MainForm_Load(object? sender, EventArgs e)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = "ubuntu.exe",
-                Arguments = "",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            process = Process.Start(startInfo);
-
+            TryStartUbuntu();
             _dataObject = LoadJsonFromDataFile();
-            if (_isFreshStart || string.IsNullOrEmpty(_dataObject.Configs.ServerAdress) || string.IsNullOrEmpty(_dataObject.Configs.ClientAdress))
+            LoadUiFromData();
+            _uiLoaded = true;
+
+            RebuildConnectors();
+            if (_clientConnector == null || _serverConnector == null)
             {
-                ErrorText.Visible = true;
-                foreach (Control control in Controls)
-                {
-                    control.Enabled = false;
-                }
+                StatusLabel.Text = "Status: open settings and fill host:port";
+                RunButton.Enabled = false;
+                StopButton.Enabled = false;
+                _statusTimer.Start();
                 return;
             }
 
-            ClientPathTextBox.Text = _dataObject.Configs.ClientTomlPath;
-            ServerPathTextBox.Text = _dataObject.Configs.ServerTomlPath;
-
-            for (int i = 0; i < _dataObject.Services.Count; i++)
-            {
-                var service = _dataObject.Services[i];
-                var serviceControl = new ServiceControl();
-                serviceControl.SetupControl(service);
-                serviceControl.SetIndex(i);
-                serviceControl.ExitClicked += ControlDeleted;
-                serviceControl.Location = new Point(0, i * 130);
-                panel1.Controls.Add(serviceControl);
-            }
-
-            _clientConnector = new SshConnector(_dataObject.Configs.ClientAdress.Split(':')[0],
-                int.Parse(_dataObject.Configs.ClientAdress.Split(':')[1]), _dataObject.Configs.ClientUsername,
-                _dataObject.Configs.ClientPassword);
-
-            _serverConnector = new SshConnector(_dataObject.Configs.ServerAdress.Split(':')[0],
-                int.Parse(_dataObject.Configs.ServerAdress.Split(':')[1]), _dataObject.Configs.ServerUsername,
-                _dataObject.Configs.ServerPassword);
-
             StatusLabel.Text = "Status: checking rathole...";
             RunButton.Enabled = false;
+            RestoreConnectionState();
             Task.Run(() =>
             {
                 CheckRatholeBinaries();
@@ -92,9 +91,81 @@ namespace PortsAppGui
                 });
             });
         }
+        private void TryStartUbuntu()
+        {
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = "ubuntu.exe",
+                    Arguments = "",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                process = Process.Start(startInfo);
+            }
+            catch
+            {
+                process = null;
+            }
+        }
+
+        private void LoadUiFromData()
+        {
+            panel1.Controls.Clear();
+
+            if (_isFreshStart || string.IsNullOrEmpty(_dataObject.Configs.ServerAddress) || string.IsNullOrEmpty(_dataObject.Configs.ClientAddress))
+            {
+                ErrorText.Visible = true;
+                panel1.Controls.Add(ErrorText);
+            }
+
+            for (int i = 0; i < _dataObject.Services.Count; i++)
+            {
+                AddServiceControl(_dataObject.Services[i], i);
+            }
+
+            ApplyServiceValidationStates();
+        }
+
+        private void AddServiceControl(Service service, int index)
+        {
+            var serviceControl = new ServiceControl();
+            serviceControl.SetupControl(service);
+            serviceControl.SetIndex(index);
+            serviceControl.ExitClicked += ControlDeleted;
+            serviceControl.ValueChanged += (_, _) => AutoSaveData();
+            panel1.Controls.Add(serviceControl);
+        }
+
+        private void RebuildConnectors()
+        {
+            _clientConnector = null;
+            _serverConnector = null;
+
+            if (!ConfigValidator.TryParseHostPort(_dataObject.Configs.ClientAddress, out var clientHost, out var clientPort) ||
+                !ConfigValidator.TryParseHostPort(_dataObject.Configs.ServerAddress, out var serverHost, out var serverPort))
+            {
+                return;
+            }
+
+            _clientConnector = new SshConnector(clientHost, clientPort, _dataObject.Configs.ClientUsername,
+                _dataObject.Configs.ClientPassword);
+            _serverConnector = new SshConnector(serverHost, serverPort, _dataObject.Configs.ServerUsername,
+                _dataObject.Configs.ServerPassword);
+        }
 
         private void CheckRatholeBinaries()
         {
+            if (_clientConnector == null || _serverConnector == null)
+            {
+                _clientSshFailed = true;
+                _serverSshFailed = true;
+                _clientBinaryOk = false;
+                _serverBinaryOk = false;
+                return;
+            }
+
             var clientResult = _clientConnector.RatholeBinaryExists(_dataObject.Configs.ClientRatholePath);
             var serverResult = _serverConnector.RatholeBinaryExists(_dataObject.Configs.ServerRatholePath);
 
@@ -136,11 +207,8 @@ namespace PortsAppGui
         {
             if (!File.Exists(Program.DataFilePath))
             {
-                var tmpFile = File.Create(Program.DataFilePath);
-                tmpFile.Close();
+                using var tmpFile = File.Create(Program.DataFilePath);
                 _dataObject = new JsonDataClass();
-                _dataObject.Configs = new ConfigStore();
-                _dataObject.Services = new List<Service>();
                 SaveData();
                 _isFreshStart = true;
                 return _dataObject;
@@ -149,13 +217,9 @@ namespace PortsAppGui
             try
             {
                 string jsonFromFile = File.ReadAllText(Program.DataFilePath);
-                var data = JsonSerializer.Deserialize<JsonDataClass>(jsonFromFile);
-
-                if (data.Services == null)
-                    data.Services = new List<Service>();
-                if (data.Configs == null)
-                    data.Configs = new ConfigStore();
-
+                var data = JsonSerializer.Deserialize<JsonDataClass>(jsonFromFile) ?? new JsonDataClass();
+                data.Services ??= new List<Service>();
+                data.Configs ??= new ConfigStore();
                 return data;
             }
             catch (Exception)
@@ -166,54 +230,64 @@ namespace PortsAppGui
 
         public void ControlDeleted(int index, ServiceControl service)
         {
+            if (MessageBox.Show($"Delete service '{service.GetServiceData().ServiceName}'?", "Delete service", MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
             panel1.SuspendLayout();
-            _dataObject.Services.Remove(_dataObject.Services[index]);
+            _dataObject.Services.RemoveAt(index);
             panel1.Controls.Remove(service);
-            RearangeElements(index);
+            RearrangeElements();
             panel1.ResumeLayout(true);
             panel1.PerformLayout();
+            AutoSaveData();
         }
 
         public void AddControl()
         {
             panel1.SuspendLayout();
             var service = new Service();
-            var serviceControl = new ServiceControl();
             _dataObject.Services.Add(service);
-            var index = _dataObject.Services.IndexOf(service);
-            serviceControl.SetIndex(index);
-            serviceControl.ExitClicked += ControlDeleted;
-            serviceControl.Location = new Point(5, index * 130);
-            panel1.Controls.Add(serviceControl);
-            RearangeElements(index);
+            AddServiceControl(service, _dataObject.Services.Count - 1);
+            RearrangeElements();
             panel1.ResumeLayout(true);
             panel1.PerformLayout();
+            AutoSaveData();
         }
 
-        private void RearangeElements(int index)
+        private void RearrangeElements()
         {
             var controlsArray = panel1.Controls.OfType<ServiceControl>().ToList();
             for (int i = 0; i < controlsArray.Count; i++)
             {
-                var serviceControl = controlsArray[i];
-                serviceControl.Location = new Point(0, i * 130);
-                serviceControl.Index = i;
+                controlsArray[i].Index = i;
             }
         }
 
         public void SaveData()
         {
-            _dataObject.Configs.ClientTomlPath = ClientPathTextBox.Text;
-            _dataObject.Configs.ServerTomlPath = ServerPathTextBox.Text;
-            foreach (Control control in panel1.Controls)
-            {
-                if (control is not ServiceControl) continue;
-                var castedControl = (ServiceControl)control;
-                _dataObject.Services[castedControl.Index] = castedControl.GetServiceData();
-            }
+            _dataObject.Services = GetCurrentServices();
 
             string dataToWrite = JsonSerializer.Serialize(_dataObject, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(Program.DataFilePath, dataToWrite);
+        }
+
+        private void AutoSaveData()
+        {
+            if (!_uiLoaded)
+                return;
+
+            SaveData();
+            ApplyServiceValidationStates();
+        }
+
+        private List<Service> GetCurrentServices()
+        {
+            return panel1.Controls
+                .OfType<ServiceControl>()
+                .OrderBy(control => control.Index)
+                .Select(control => control.GetServiceData())
+                .ToList();
         }
 
         private void AddRuleButton_Click(object sender, EventArgs e)
@@ -224,146 +298,264 @@ namespace PortsAppGui
         private void SaveRulesButton_Click(object sender, EventArgs e)
         {
             SaveData();
+            MessageBox.Show("Configuration saved.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void SettingsButton_Click(object sender, EventArgs e)
+        {
+            OpenSettings();
+        }
+
+        private void TestSshButton_Click(object sender, EventArgs e)
+        {
+            TestSshConnections();
+        }
+
+        private void PreviewTomlButton_Click(object sender, EventArgs e)
+        {
+            PreviewConfigs();
+        }
+
+        private void LogsButton_Click(object sender, EventArgs e)
+        {
+            OpenLogs();
         }
 
         public void WriteRulesToFile()
         {
-            string clientFilePath = ClientPathTextBox.Text;
-            string serverFilePath = ServerPathTextBox.Text;
+            string clientFilePath = _dataObject.Configs.ClientTomlPath;
+            string serverFilePath = _dataObject.Configs.ServerTomlPath;
+            var services = GetCurrentServices();
 
-            string serverfileContent = $@"[server]
-bind_addr = ""0.0.0.0:2333""
-heartbeat_interval = 20
-
-[server.transport]
-type = ""tcp""
-
-[server.transport.tcp]
-nodelay = true
-keepalive_secs = 20
-keepalive_interval = 8
-
-";
-
-            string clientfileContent = $@"
-[client]
-remote_addr = ""{_dataObject.Configs.ServerAdress.Split(':')[0]}:2333""
-
-[client.transport]
-type = ""tcp""
-
-[client.transport.tcp]
-nodelay = true
-keepalive_secs = 20
-keepalive_interval = 8
-
-";
-
-            File.WriteAllText(clientFilePath, clientfileContent, Encoding.UTF8);
-            File.WriteAllText(serverFilePath, serverfileContent, Encoding.UTF8);
-            var controlsArray = panel1.Controls.OfType<ServiceControl>().ToList();
-            foreach (ServiceControl control in controlsArray)
-            {
-                var data = control.GetServiceData();
-                string clienttext = $@"[client.services.{data.ServiceName}]
-type = ""tcp""
-token = ""{data.ServiceToken}""
-local_addr = ""{data.ClientAdress}:{data.ClientPort}""
-nodelay = {data.NoDelay.ToString().ToLower()}
-
-";
-                if (data.UdpEnabled)
-                {
-                    clienttext += $@"[client.services.{data.ServiceName}_udp]
-type = ""udp""
-token = ""{data.ServiceToken}_udp""
-local_addr = ""{data.ClientAdress}:{data.ClientPort}""
-
-";
-                }
-
-                string servertext = $@"[server.services.{data.ServiceName}]
-type = ""tcp""
-token = ""{data.ServiceToken}""
-bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
-nodelay = {data.NoDelay.ToString().ToLower()}
-
-";
-                if (data.UdpEnabled)
-                {
-                    servertext += $@"[server.services.{data.ServiceName}_udp]
-type = ""udp""
-token = ""{data.ServiceToken}_udp""
-bind_addr = ""{data.ServerAdress}:{data.ServerPort}""
-
-";
-                }
-
-                File.AppendAllText(clientFilePath, clienttext, Encoding.UTF8);
-                File.AppendAllText(serverFilePath, servertext, Encoding.UTF8);
-            }
+            File.WriteAllText(clientFilePath, TomlGenerator.GenerateClientConfig(_dataObject.Configs, services), Encoding.UTF8);
+            File.WriteAllText(serverFilePath, TomlGenerator.GenerateServerConfig(services), Encoding.UTF8);
         }
 
         private void RunButton_Click(object sender, EventArgs e)
         {
-            CheckRatholeBinaries();
-            if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
+            try
             {
-                ApplyBinaryStatus();
-                return;
+                SaveData();
+                var errors = ConfigValidator.Validate(_dataObject.Configs, GetCurrentServices());
+                if (errors.Count > 0)
+                {
+                    MessageBox.Show(string.Join(Environment.NewLine, errors), "Validation errors", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ApplyServiceValidationStates();
+                    return;
+                }
+
+                RebuildConnectors();
+                CheckRatholeBinaries();
+                if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed || _clientConnector == null || _serverConnector == null)
+                {
+                    ApplyBinaryStatus();
+                    return;
+                }
+
+                WriteRulesToFile();
+
+                var serverRemoteConfigPath = CombineRemotePath(_dataObject.Configs.ServerRatholePath, _dataObject.Configs.ServerTomlPath);
+                var clientRemoteConfigPath = CombineRemotePath(_dataObject.Configs.ClientRatholePath, _dataObject.Configs.ClientTomlPath);
+
+                _serverConnector.SendFile(_dataObject.Configs.ServerTomlPath, serverRemoteConfigPath);
+                _serverConnector.BeginRatholeConnection(serverRemoteConfigPath, _dataObject.Configs.ServerRatholePath);
+                _clientConnector.SendFile(_dataObject.Configs.ClientTomlPath, clientRemoteConfigPath);
+                _clientConnector.BeginRatholeConnection(clientRemoteConfigPath, _dataObject.Configs.ClientRatholePath);
+                SaveConnectionState();
+
+                RefreshStatus();
             }
-
-            WriteRulesToFile();
-
-            _serverConnector.SendFile(_dataObject.Configs.ServerTomlPath,
-                _dataObject.Configs.ServerRatholePath + _dataObject.Configs.ServerTomlPath.Split('/')[^1]);
-            _serverConnector.BeginRatholeConnection(_dataObject.Configs.ServerRatholePath + _dataObject.Configs.ServerTomlPath.Split('/')[^1],
-                _dataObject.Configs.ServerRatholePath);
-            _clientConnector.SendFile(_dataObject.Configs.ClientTomlPath,
-                _dataObject.Configs.ClientRatholePath + _dataObject.Configs.ClientTomlPath.Split('/')[^1]);
-            _clientConnector.BeginRatholeConnection(_dataObject.Configs.ClientRatholePath + _dataObject.Configs.ClientTomlPath.Split('/')[^1],
-                _dataObject.Configs.ClientRatholePath);
-
-            RefreshStatus();
+            catch (Exception ex)
+            {
+                StatusLabel.Text = "Status: error";
+                pictureBox1.Image = ErrorImage;
+                RunButton.Enabled = true;
+                StopButton.Enabled = false;
+                MessageBox.Show(ex.Message, "SSH error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (!_isClosingFromTray && e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                Hide();
+                _trayIcon.ShowBalloonTip(1500, "RatholeGUI", "Application minimized to tray.", ToolTipIcon.Info);
+                return;
+            }
+
             _statusTimer.Stop();
             _clientConnector?.EndRatholeConnection();
             _serverConnector?.EndRatholeConnection();
+            ConnectionState.Clear();
             process?.Kill(true);
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
+            _trayMenu.Dispose();
         }
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-            _clientConnector.EndRatholeConnection();
-            _serverConnector.EndRatholeConnection();
+            _clientConnector?.EndRatholeConnection();
+            _serverConnector?.EndRatholeConnection();
+            ConnectionState.Clear();
             RefreshStatus();
+        }
+
+        private static string CombineRemotePath(string remoteDir, string localPath)
+        {
+            var normalizedLocalPath = localPath.Replace('\\', '/');
+            var fileName = normalizedLocalPath.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? localPath;
+            return remoteDir.TrimEnd('/') + "/" + fileName;
         }
 
         private void RefreshStatus()
         {
+            if (_clientConnector == null || _serverConnector == null)
+            {
+                StatusLabel.Text = "Status: invalid host:port";
+                RunButton.Enabled = false;
+                StopButton.Enabled = false;
+                pictureBox1.Image = ErrorImage;
+                return;
+            }
+
             if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
             {
                 ApplyBinaryStatus();
                 return;
             }
 
-            bool clientUp = _clientConnector != null && _clientConnector.IsRatholeRunning();
-            bool serverUp = _serverConnector != null && _serverConnector.IsRatholeRunning();
+            bool clientUp = _clientConnector.IsRatholeRunning();
+            bool serverUp = _serverConnector.IsRatholeRunning();
             bool running = clientUp && serverUp;
+            bool anyRunning = clientUp || serverUp;
 
-            StopButton.Enabled = running;
-            RunButton.Enabled = !running;
+            StopButton.Enabled = anyRunning;
+            RunButton.Enabled = !anyRunning;
             pictureBox1.Image = running ? SuccessImage : ErrorImage;
-            StatusLabel.Text = running ? "Status: Running" : "Status: Stopped";
+            StatusLabel.Text = running
+                ? "Status: Server Running / Client Running"
+                : $"Status: Server {(serverUp ? "Running" : "Stopped")} / Client {(clientUp ? "Running" : "Stopped")}";
+
+            if (!anyRunning)
+                ConnectionState.Clear();
+        }
+
+        private void OpenSettings()
+        {
+            using var form = new SettingsForm(_dataObject.Configs, () =>
+            {
+                SaveData();
+                RebuildConnectors();
+            });
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                _isFreshStart = false;
+                ErrorText.Visible = false;
+                panel1.Controls.Remove(ErrorText);
+                RebuildConnectors();
+                RestoreConnectionState();
+                RefreshStatus();
+            }
+        }
+
+        private void RestoreConnectionState()
+        {
+            var state = ConnectionState.Load();
+            if (state == null || !state.Matches(_dataObject.Configs) || _clientConnector == null || _serverConnector == null)
+                return;
+
+            _serverConnector.LoadProcessPid(state.ServerPid);
+            _clientConnector.LoadProcessPid(state.ClientPid);
+        }
+
+        private void SaveConnectionState()
+        {
+            if (_serverConnector == null || _clientConnector == null)
+                return;
+
+            ConnectionState.Save(new ConnectionState
+            {
+                ServerAddress = _dataObject.Configs.ServerAddress,
+                ClientAddress = _dataObject.Configs.ClientAddress,
+                ServerPid = _serverConnector.ProcessPid,
+                ClientPid = _clientConnector.ProcessPid
+            });
+        }
+
+        private void TestSshConnections()
+        {
+            SaveData();
+            RebuildConnectors();
+            if (_serverConnector == null || _clientConnector == null)
+            {
+                MessageBox.Show("Проверь Server/Client address в формате host:port.", "Invalid settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var serverOk = _serverConnector.TestConnection(out var serverError);
+            var clientOk = _clientConnector.TestConnection(out var clientError);
+            MessageBox.Show(
+                $"Server SSH: {(serverOk ? "OK" : serverError)}{Environment.NewLine}Client SSH: {(clientOk ? "OK" : clientError)}",
+                "SSH test", MessageBoxButtons.OK, serverOk && clientOk ? MessageBoxIcon.Information : MessageBoxIcon.Error);
+        }
+
+        private void PreviewConfigs()
+        {
+            SaveData();
+            var errors = ConfigValidator.Validate(_dataObject.Configs, GetCurrentServices());
+            if (errors.Count > 0)
+            {
+                MessageBox.Show(string.Join(Environment.NewLine, errors), "Validation errors", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using var form = new PreviewForm(
+                TomlGenerator.GenerateClientConfig(_dataObject.Configs, GetCurrentServices()),
+                TomlGenerator.GenerateServerConfig(GetCurrentServices()));
+            form.ShowDialog(this);
+        }
+
+        private void OpenLogs()
+        {
+            RebuildConnectors();
+            if (_serverConnector == null || _clientConnector == null)
+            {
+                MessageBox.Show("Проверь Server/Client address в формате host:port.", "Invalid settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using var form = new LogViewerForm(
+                () => _serverConnector.ReadRatholeLog(),
+                () => _clientConnector.ReadRatholeLog());
+            form.ShowDialog(this);
+        }
+
+        private void ApplyServiceValidationStates()
+        {
+            foreach (var serviceControl in panel1.Controls.OfType<ServiceControl>())
+                serviceControl.ApplyValidationState();
+        }
+
+        private void Form1_Resize(object? sender, EventArgs e)
+        {
+            if (WindowState == FormWindowState.Minimized)
+                Hide();
+        }
+
+        private void ShowFromTray()
+        {
+            Show();
+            WindowState = FormWindowState.Normal;
+            Activate();
         }
     }
 
     public class JsonDataClass
     {
-        public ConfigStore Configs { get; set; }
-        public List<Service> Services { get; set; }
+        public ConfigStore Configs { get; set; } = new();
+        public List<Service> Services { get; set; } = new();
     }
 }

@@ -32,9 +32,9 @@ namespace PortsAppGui
             ServiceNameTextBox = new TextBox();
             ServiceTokenTextBox = new TextBox();
             label2 = new Label();
-            ServerAdressTextBox = new TextBox();
+            ServerAddressTextBox = new TextBox();
             label3 = new Label();
-            ClientAdressTextBox = new TextBox();
+            ClientAddressTextBox = new TextBox();
             label4 = new Label();
             label5 = new Label();
             label6 = new Label();
@@ -45,6 +45,7 @@ namespace PortsAppGui
             button1 = new Button();
             NoDelayCheckBox = new CheckBox();
             UdpCheckBox = new CheckBox();
+            EnabledCheckBox = new CheckBox();
             SuspendLayout();
             // 
             // label1
@@ -79,42 +80,42 @@ namespace PortsAppGui
             label2.TabIndex = 2;
             label2.Text = "Service token";
             // 
-            // ServerAdressTextBox
+            // ServerAddressTextBox
             // 
-            ServerAdressTextBox.Location = new Point(198, 62);
-            ServerAdressTextBox.Name = "ServerAdressTextBox";
-            ServerAdressTextBox.Size = new Size(268, 23);
-            ServerAdressTextBox.TabIndex = 7;
+            ServerAddressTextBox.Location = new Point(198, 62);
+            ServerAddressTextBox.Name = "ServerAddressTextBox";
+            ServerAddressTextBox.Size = new Size(268, 23);
+            ServerAddressTextBox.TabIndex = 7;
             // 
             // label3
             // 
             label3.AutoSize = true;
             label3.Location = new Point(198, 44);
             label3.Name = "label3";
-            label3.Size = new Size(75, 15);
+            label3.Size = new Size(82, 15);
             label3.TabIndex = 6;
-            label3.Text = "Server adress";
+            label3.Text = "Server address";
             // 
-            // ClientAdressTextBox
+            // ClientAddressTextBox
             // 
-            ClientAdressTextBox.Location = new Point(198, 18);
-            ClientAdressTextBox.Name = "ClientAdressTextBox";
-            ClientAdressTextBox.Size = new Size(268, 23);
-            ClientAdressTextBox.TabIndex = 5;
+            ClientAddressTextBox.Location = new Point(198, 18);
+            ClientAddressTextBox.Name = "ClientAddressTextBox";
+            ClientAddressTextBox.Size = new Size(268, 23);
+            ClientAddressTextBox.TabIndex = 5;
             // 
             // label4
             // 
             label4.AutoSize = true;
             label4.Location = new Point(198, 0);
             label4.Name = "label4";
-            label4.Size = new Size(74, 15);
+            label4.Size = new Size(81, 15);
             label4.TabIndex = 4;
-            label4.Text = "Client adress";
+            label4.Text = "Client address";
             // 
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new Point(501, 21);
+            label5.Location = new Point(472, 21);
             label5.Name = "label5";
             label5.Size = new Size(10, 15);
             label5.TabIndex = 8;
@@ -123,7 +124,7 @@ namespace PortsAppGui
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new Point(501, 65);
+            label6.Location = new Point(472, 62);
             label6.Name = "label6";
             label6.Size = new Size(10, 15);
             label6.TabIndex = 9;
@@ -131,14 +132,14 @@ namespace PortsAppGui
             // 
             // ClientPortTextBox
             // 
-            ClientPortTextBox.Location = new Point(544, 18);
+            ClientPortTextBox.Location = new Point(488, 18);
             ClientPortTextBox.Name = "ClientPortTextBox";
             ClientPortTextBox.Size = new Size(99, 23);
             ClientPortTextBox.TabIndex = 10;
             // 
             // ServerPortTextBox
             // 
-            ServerPortTextBox.Location = new Point(544, 62);
+            ServerPortTextBox.Location = new Point(488, 62);
             ServerPortTextBox.Name = "ServerPortTextBox";
             ServerPortTextBox.Size = new Size(99, 23);
             ServerPortTextBox.TabIndex = 11;
@@ -146,7 +147,7 @@ namespace PortsAppGui
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new Point(544, 0);
+            label7.Location = new Point(505, 0);
             label7.Name = "label7";
             label7.Size = new Size(63, 15);
             label7.TabIndex = 12;
@@ -155,7 +156,7 @@ namespace PortsAppGui
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new Point(544, 44);
+            label8.Location = new Point(504, 44);
             label8.Name = "label8";
             label8.Size = new Size(64, 15);
             label8.TabIndex = 13;
@@ -163,7 +164,7 @@ namespace PortsAppGui
             // 
             // button1
             // 
-            button1.Location = new Point(679, -1);
+            button1.Location = new Point(593, 3);
             button1.Name = "button1";
             button1.Size = new Size(22, 25);
             button1.TabIndex = 14;
@@ -191,11 +192,24 @@ namespace PortsAppGui
             UdpCheckBox.Text = "Enable UDP";
             UdpCheckBox.UseVisualStyleBackColor = true;
             // 
+            // EnabledCheckBox
+            // 
+            EnabledCheckBox.AutoSize = true;
+            EnabledCheckBox.Checked = true;
+            EnabledCheckBox.CheckState = CheckState.Checked;
+            EnabledCheckBox.Location = new Point(3, 91);
+            EnabledCheckBox.Name = "EnabledCheckBox";
+            EnabledCheckBox.Size = new Size(68, 19);
+            EnabledCheckBox.TabIndex = 17;
+            EnabledCheckBox.Text = "Enabled";
+            EnabledCheckBox.UseVisualStyleBackColor = true;
+            // 
             // ServiceControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BorderStyle = BorderStyle.FixedSingle;
+            Controls.Add(EnabledCheckBox);
             Controls.Add(NoDelayCheckBox);
             Controls.Add(UdpCheckBox);
             Controls.Add(button1);
@@ -205,16 +219,16 @@ namespace PortsAppGui
             Controls.Add(ClientPortTextBox);
             Controls.Add(label6);
             Controls.Add(label5);
-            Controls.Add(ServerAdressTextBox);
+            Controls.Add(ServerAddressTextBox);
             Controls.Add(label3);
-            Controls.Add(ClientAdressTextBox);
+            Controls.Add(ClientAddressTextBox);
             Controls.Add(label4);
             Controls.Add(ServiceTokenTextBox);
             Controls.Add(label2);
             Controls.Add(ServiceNameTextBox);
             Controls.Add(label1);
             Name = "ServiceControl";
-            Size = new Size(700, 120);
+            Size = new Size(616, 115);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -224,9 +238,9 @@ namespace PortsAppGui
         private Label label1;
         private TextBox ServiceTokenTextBox;
         private Label label2;
-        private TextBox ServerAdressTextBox;
+        private TextBox ServerAddressTextBox;
         private Label label3;
-        private TextBox ClientAdressTextBox;
+        private TextBox ClientAddressTextBox;
         private Label label4;
         private Label label5;
         private Label label6;
@@ -238,5 +252,6 @@ namespace PortsAppGui
         public Button button1;
         public CheckBox NoDelayCheckBox;
         public CheckBox UdpCheckBox;
+        public CheckBox EnabledCheckBox;
     }
 }

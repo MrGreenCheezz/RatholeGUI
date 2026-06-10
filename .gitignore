@@ -15,6 +15,11 @@ x64/
 [Oo]bj/
 .vs/
 
+# Local RatholeGUI runtime/config files
+PortsAppGui/data.json
+PortsAppGui/connection-state.json
+PortsAppGui/*.toml
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

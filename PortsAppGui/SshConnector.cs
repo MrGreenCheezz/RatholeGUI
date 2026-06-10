@@ -8,17 +8,19 @@ namespace PortsAppGui
         {
             if (string.IsNullOrWhiteSpace(ratholeDir))
                 return "";
+
             return ratholeDir.TrimEnd('/') + "/rathole";
         }
 
-        static string ShellQuote(string path) => "'" + path.Replace("'", "'\\''") + "'";
-        string _host;
-        int _port;
-        string _username;
-        string _password;
+        private static string ShellQuote(string path) => "'" + path.Replace("'", "'\\''") + "'";
 
-        public SshClient Client;
-        public string ProccessPID;
+        private readonly string _host;
+        private readonly int _port;
+        private readonly string _username;
+        private readonly string _password;
+
+        public SshClient? Client;
+        public string ProcessPid { get; private set; } = "";
 
         public SshConnector(string host, int port, string username, string password)
         {
@@ -28,45 +30,94 @@ namespace PortsAppGui
             _password = password;
         }
 
+        public void LoadProcessPid(string processPid)
+        {
+            ProcessPid = processPid.All(char.IsDigit) ? processPid : "";
+        }
+
         public void SendFile(string localFilePath, string remoteFilePath)
         {
-            using (var client = new SftpClient(_host, _port, _username, _password))
+            using var client = new SftpClient(_host, _port, _username, _password);
+            client.Connect();
+
+            using var fileStream = new FileStream(localFilePath, FileMode.Open);
+            client.UploadFile(fileStream, remoteFilePath);
+
+            client.Disconnect();
+        }
+
+        public void BeginRatholeConnection(string remoteFilePath, string ratholeDir)
+        {
+            var ssh = new SshClient(_host, _port, _username, _password)
             {
-                client.Connect();
-                using (var fileStream = new FileStream(localFilePath, FileMode.Open))
+                KeepAliveInterval = TimeSpan.FromSeconds(60)
+            };
+            ssh.Connect();
+
+            var ratholeBinary = GetRatholeBinaryPath(ratholeDir);
+            var command = $"nohup {ShellQuote(ratholeBinary)} {ShellQuote(remoteFilePath)} > rathole.log 2>&1 & echo $!";
+            var cmdResult = ssh.RunCommand(command);
+            ProcessPid = cmdResult.Result.Trim();
+            Client = ssh;
+        }
+
+        public bool TestConnection(out string error)
+        {
+            error = "";
+            try
+            {
+                using var ssh = new SshClient(_host, _port, _username, _password);
+                ssh.Connect();
+                var result = ssh.RunCommand("echo ok");
+                if (result.ExitStatus != 0)
                 {
-                    client.UploadFile(fileStream, remoteFilePath);
+                    error = result.Error.Trim();
+                    return false;
                 }
-                client.Disconnect();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
             }
         }
 
-        public void BeginRatholeConnection(string remoteFilePath, string ratholeFilePath)
+        public string ReadRatholeLog(int lines = 100)
         {
-            var ssh = new SshClient(_host, _port, _username, _password);
-            ssh.KeepAliveInterval = TimeSpan.FromSeconds(60);
+            using var ssh = new SshClient(_host, _port, _username, _password);
             ssh.Connect();
-            var command = "nohup " + ratholeFilePath + "./rathole " + remoteFilePath + " >rathole.log 2>&1 & echo $!";
-            var cmdResult = ssh.RunCommand(command);
-            ProccessPID = cmdResult.Result.Trim();
-            Client = ssh;
+            var command = $"tail -n {Math.Clamp(lines, 1, 1000)} rathole.log 2>&1";
+            var result = ssh.RunCommand(command);
+            return string.IsNullOrWhiteSpace(result.Result) ? result.Error : result.Result;
         }
 
         public void EndRatholeConnection()
         {
-            if (Client == null) return;
-            if (!Client.IsConnected)
-            {
-                Client.Connect();
-            }
+            var ownsClient = Client == null;
+            var ssh = Client ?? new SshClient(_host, _port, _username, _password);
 
-            if (!string.IsNullOrEmpty(ProccessPID))
+            try
             {
-                Client.RunCommand($"kill -9 {ProccessPID}");
-                ProccessPID = "";
-            }
+                if (!ssh.IsConnected)
+                    ssh.Connect();
 
-            Client?.Disconnect();
+                if (!string.IsNullOrEmpty(ProcessPid))
+                {
+                    ssh.RunCommand($"kill {ProcessPid} 2>/dev/null || true");
+                    Thread.Sleep(500);
+                    ssh.RunCommand($"kill -9 {ProcessPid} 2>/dev/null || true");
+                    ProcessPid = "";
+                }
+            }
+            finally
+            {
+                if (ownsClient)
+                    ssh.Dispose();
+                else
+                    ssh.Disconnect();
+            }
         }
 
         // null = SSH error, true = exists, false = missing
@@ -91,20 +142,36 @@ namespace PortsAppGui
 
         public bool IsRatholeRunning()
         {
-            if (Client == null)
-                return false;
-
-            if (!Client.IsConnected)
-                Client.Connect();
-
-            if (!string.IsNullOrEmpty(ProccessPID))
+            try
             {
-                var pidCheck = Client.RunCommand($"ps -p {ProccessPID} -o comm=");
+                if (Client != null)
+                {
+                    if (!Client.IsConnected)
+                        Client.Connect();
+
+                    return IsRatholeRunning(Client);
+                }
+
+                using var ssh = new SshClient(_host, _port, _username, _password);
+                ssh.Connect();
+                return IsRatholeRunning(ssh);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsRatholeRunning(SshClient ssh)
+        {
+            if (!string.IsNullOrEmpty(ProcessPid) && ProcessPid.All(char.IsDigit))
+            {
+                var pidCheck = ssh.RunCommand($"ps -p {ProcessPid} -o comm=");
                 if (pidCheck.ExitStatus == 0 && pidCheck.Result.Contains("rathole"))
                     return true;
             }
 
-            var pgrep = Client.RunCommand("pgrep -x rathole");
+            var pgrep = ssh.RunCommand("pgrep -x rathole");
             return !string.IsNullOrWhiteSpace(pgrep.Result);
         }
     }
