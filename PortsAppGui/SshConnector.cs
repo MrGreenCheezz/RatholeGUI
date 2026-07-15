@@ -93,7 +93,7 @@ namespace PortsAppGui
             return string.IsNullOrWhiteSpace(result.Result) ? result.Error : result.Result;
         }
 
-        public void EndRatholeConnection()
+        public void StopAllRatholeProcesses()
         {
             var ownsClient = Client == null;
             var ssh = Client ?? new SshClient(_host, _port, _username, _password);
@@ -103,13 +103,24 @@ namespace PortsAppGui
                 if (!ssh.IsConnected)
                     ssh.Connect();
 
-                if (!string.IsNullOrEmpty(ProcessPid))
-                {
-                    ssh.RunCommand($"kill {ProcessPid} 2>/dev/null || true");
-                    Thread.Sleep(500);
-                    ssh.RunCommand($"kill -9 {ProcessPid} 2>/dev/null || true");
-                    ProcessPid = "";
-                }
+                var result = ssh.RunCommand("""
+                    command -v pkill >/dev/null 2>&1 && command -v pgrep >/dev/null 2>&1 || { echo 'pkill/pgrep not found' >&2; exit 127; }
+                    if pgrep -x rathole >/dev/null 2>&1; then
+                        pkill -TERM -x rathole 2>/dev/null || true
+                        sleep 1
+                        pkill -KILL -x rathole 2>/dev/null || true
+                    fi
+                    if pgrep -x rathole >/dev/null 2>&1; then
+                        echo 'rathole processes remain (check permissions)' >&2
+                        exit 1
+                    fi
+                    """);
+                if (result.ExitStatus != 0)
+                    throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error)
+                        ? "Failed to stop all rathole processes."
+                        : result.Error.Trim());
+
+                ProcessPid = "";
             }
             finally
             {

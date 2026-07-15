@@ -26,6 +26,7 @@ namespace PortsAppGui
         private bool _serverBinaryOk;
         private bool _clientSshFailed;
         private bool _serverSshFailed;
+        private bool _isStatusCheckRunning;
         private bool _uiLoaded;
         private bool _isClosingFromTray;
 
@@ -36,7 +37,7 @@ namespace PortsAppGui
             Resize += Form1_Resize;
 
             _statusTimer = new Timer { Interval = 3000 };
-            _statusTimer.Tick += (s, e) => RefreshStatus();
+            _statusTimer.Tick += async (_, _) => await RefreshStatusAsync();
 
             _trayMenu = new ContextMenuStrip();
             _trayMenu.Items.Add("Open", null, (_, _) => ShowFromTray());
@@ -58,7 +59,7 @@ namespace PortsAppGui
             _trayIcon.DoubleClick += (_, _) => ShowFromTray();
         }
 
-        private void MainForm_Load(object? sender, EventArgs e)
+        private async void MainForm_Load(object? sender, EventArgs e)
         {
             TryStartUbuntu();
             _dataObject = LoadJsonFromDataFile();
@@ -78,18 +79,8 @@ namespace PortsAppGui
             StatusLabel.Text = "Status: checking rathole...";
             RunButton.Enabled = false;
             RestoreConnectionState();
-            Task.Run(() =>
-            {
-                CheckRatholeBinaries();
-                BeginInvoke(() =>
-                {
-                    if (_clientBinaryOk && _serverBinaryOk && !_clientSshFailed && !_serverSshFailed)
-                        RefreshStatus();
-                    else
-                        ApplyBinaryStatus();
-                    _statusTimer.Start();
-                });
-            });
+            _statusTimer.Start();
+            await RefreshStatusAsync();
         }
         private void TryStartUbuntu()
         {
@@ -142,6 +133,10 @@ namespace PortsAppGui
         {
             _clientConnector = null;
             _serverConnector = null;
+            _clientBinaryOk = false;
+            _serverBinaryOk = false;
+            _clientSshFailed = false;
+            _serverSshFailed = false;
 
             if (!ConfigValidator.TryParseHostPort(_dataObject.Configs.ClientAddress, out var clientHost, out var clientPort) ||
                 !ConfigValidator.TryParseHostPort(_dataObject.Configs.ServerAddress, out var serverHost, out var serverPort))
@@ -153,6 +148,26 @@ namespace PortsAppGui
                 _dataObject.Configs.ClientPassword);
             _serverConnector = new SshConnector(serverHost, serverPort, _dataObject.Configs.ServerUsername,
                 _dataObject.Configs.ServerPassword);
+        }
+
+        private async Task RefreshStatusAsync()
+        {
+            if (_isStatusCheckRunning)
+                return;
+
+            _isStatusCheckRunning = true;
+            try
+            {
+                if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
+                    await Task.Run(CheckRatholeBinaries);
+
+                if (!IsDisposed && !Disposing)
+                    RefreshStatus();
+            }
+            finally
+            {
+                _isStatusCheckRunning = false;
+            }
         }
 
         private void CheckRatholeBinaries()
@@ -179,7 +194,7 @@ namespace PortsAppGui
         {
             if (_clientSshFailed || _serverSshFailed)
             {
-                StatusLabel.Text = "Status: cannot check rathole (SSH error)";
+                StatusLabel.Text = "Status: cannot check rathole (SSH error); retrying...";
             }
             else if (!_clientBinaryOk && !_serverBinaryOk)
             {
@@ -367,11 +382,15 @@ namespace PortsAppGui
             }
             catch (Exception ex)
             {
+                var stopErrors = StopRatholeEverywhere();
                 StatusLabel.Text = "Status: error";
                 pictureBox1.Image = ErrorImage;
-                RunButton.Enabled = true;
-                StopButton.Enabled = false;
-                MessageBox.Show(ex.Message, "SSH error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                RunButton.Enabled = stopErrors.Count == 0;
+                StopButton.Enabled = stopErrors.Count > 0;
+                var message = stopErrors.Count == 0
+                    ? ex.Message
+                    : $"{ex.Message}{Environment.NewLine}{Environment.NewLine}Cleanup errors:{Environment.NewLine}{string.Join(Environment.NewLine, stopErrors)}";
+                MessageBox.Show(message, "SSH error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -386,10 +405,21 @@ namespace PortsAppGui
             }
 
             _statusTimer.Stop();
-            _clientConnector?.EndRatholeConnection();
-            _serverConnector?.EndRatholeConnection();
-            ConnectionState.Clear();
-            process?.Kill(true);
+            var stopErrors = StopRatholeEverywhere();
+            if (stopErrors.Count > 0 && e.CloseReason == CloseReason.UserClosing &&
+                MessageBox.Show(
+                    $"Could not stop every rathole process:{Environment.NewLine}{string.Join(Environment.NewLine, stopErrors)}{Environment.NewLine}{Environment.NewLine}Exit anyway?",
+                    "Rathole cleanup failed", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+            {
+                e.Cancel = true;
+                _isClosingFromTray = false;
+                _statusTimer.Start();
+                return;
+            }
+
+            if (process is { HasExited: false })
+                process.Kill(true);
             _trayIcon.Visible = false;
             _trayIcon.Dispose();
             _trayMenu.Dispose();
@@ -397,10 +427,64 @@ namespace PortsAppGui
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-            _clientConnector?.EndRatholeConnection();
-            _serverConnector?.EndRatholeConnection();
-            ConnectionState.Clear();
+            var stopErrors = StopRatholeEverywhere();
+            if (stopErrors.Count > 0)
+            {
+                StatusLabel.Text = "Status: failed to stop every rathole process";
+                pictureBox1.Image = ErrorImage;
+                RunButton.Enabled = false;
+                StopButton.Enabled = true;
+                MessageBox.Show(string.Join(Environment.NewLine, stopErrors), "Rathole cleanup failed",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             RefreshStatus();
+        }
+
+        private List<string> StopRatholeEverywhere()
+        {
+            var errors = new List<string>();
+            var hasSavedConnection = ConnectionState.Load() != null;
+            Stop("Client", _clientConnector);
+            Stop("Server", _serverConnector);
+
+            if (errors.Count == 0)
+                ConnectionState.Clear();
+            else
+            {
+                _clientSshFailed = true;
+                _serverSshFailed = true;
+                try
+                {
+                    SaveConnectionState();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"State: {ex.Message}");
+                }
+            }
+
+            return errors;
+
+            void Stop(string name, SshConnector? connector)
+            {
+                if (connector == null)
+                {
+                    if (hasSavedConnection)
+                        errors.Add($"{name}: SSH settings are invalid; saved rathole processes could not be reached.");
+                    return;
+                }
+
+                try
+                {
+                    connector.StopAllRatholeProcesses();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{name}: {ex.Message}");
+                }
+            }
         }
 
         private static string CombineRemotePath(string remoteDir, string localPath)
