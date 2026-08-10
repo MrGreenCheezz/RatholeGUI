@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # WinForms and the port scanner (GetExtendedTcpTable) are Windows-only.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build app
+        run: dotnet build PortsAppGui/PortsAppGui.csproj -c Release
+
+      - name: Run tests
+        # A console runner, not a test framework: it throws on the first failed assert.
+        run: dotnet run --project PortsAppGui.Tests/PortsAppGui.Tests.csproj -c Release

@@ -20,6 +20,9 @@ PortsAppGui/data.json
 PortsAppGui/connection-state.json
 PortsAppGui/*.toml
 
+# Local tooling caches
+.serena/
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

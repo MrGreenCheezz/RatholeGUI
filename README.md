@@ -1,5 +1,10 @@
 # RatholeGUI
 
+[![Latest release](https://img.shields.io/github/v/release/MrGreenCheezz/RatholeGUI)](https://github.com/MrGreenCheezz/RatholeGUI/releases/latest)
+[![Build](https://github.com/MrGreenCheezz/RatholeGUI/actions/workflows/build.yml/badge.svg)](https://github.com/MrGreenCheezz/RatholeGUI/actions/workflows/build.yml)
+[![License: MPL 2.0](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
+![.NET 8 Windows](https://img.shields.io/badge/.NET-8.0--windows-512BD4)
+
 **RatholeGUI** is a lightweight Windows Forms application designed to automate the configuration and deployment of [Rathole](https://github.com/rapiz1/rathole) reverse proxy services across a pair of Linux servers.
 
 ## Overview
@@ -52,6 +57,24 @@ tick **UDP** in the picker when you need to forward one. **Hide system processes
 
 > Do not commit your real `data.json`: it can contain SSH addresses, usernames and passwords. Use `PortsAppGui/data.example.json` as a template.
 
+## Requirements
+
+On the machine running the GUI:
+
+- Windows 10 or 11;
+- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (only the SDK is needed if you build from source).
+
+On the two remote machines:
+
+- SSH access with a username and password (key-only servers are not supported yet);
+- the `rathole` binary already present in the directory you point the app at.
+
+## Download
+
+Grab the latest build from the [Releases page](https://github.com/MrGreenCheezz/RatholeGUI/releases/latest),
+unpack it anywhere and run `PortsAppGui.exe` — no installer. Everything the app stores stays next to
+the executable (`data.json`, `connection-state.json`, generated `.toml` files, `ratholegui-error.log`).
+
 ## Build
 
 ```bash
@@ -65,6 +88,15 @@ dotnet run --project PortsAppGui/PortsAppGui.csproj
 ```
 
 You can also open `PortsAppGui/PortsAppGui.sln` in Visual Studio and run the WinForms app from there.
+
+## Tests
+
+`PortsAppGui.Tests` is a plain console runner (no test framework): it asserts config validation, TOML
+generation, token generation and the port scanner, and exits non-zero on the first failure.
+
+```bash
+dotnet run --project PortsAppGui.Tests/PortsAppGui.Tests.csproj
+```
 
 ## Configuration
 
