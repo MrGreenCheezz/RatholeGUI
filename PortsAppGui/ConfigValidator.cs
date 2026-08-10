@@ -77,9 +77,14 @@ namespace PortsAppGui
             return int.TryParse(parts[1], out port) && port > 0 && port <= 65535;
         }
 
-        private static bool IsValidPort(string value)
+        public static bool IsValidPort(string value)
         {
             return int.TryParse(value, out var port) && port > 0 && port <= 65535;
+        }
+
+        public static bool IsValidServiceName(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && ServiceNameRegex().IsMatch(value);
         }
 
         private static string DisplayName(Service service)
