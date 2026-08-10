@@ -82,4 +82,53 @@ Assert(matchingState.Matches(config), "Expected connection state to match curren
 matchingState.ClientAddress = "other.example.com:22";
 Assert(!matchingState.Matches(config), "Expected connection state from another config to be ignored.");
 
+// --- tokens -----------------------------------------------------------------
+
+var token = TokenGenerator.Create();
+Assert(token.Length == 24, $"Expected a 24 character token, got {token.Length}.");
+Assert(token.All(char.IsLetterOrDigit), $"Token must stay alphanumeric so TOML needs no escaping: '{token}'.");
+Assert(TokenGenerator.Create() != TokenGenerator.Create(), "Tokens must not repeat.");
+
+// --- suggestions built from a scanned port ----------------------------------
+
+static ListeningEndpoint Endpoint(string process, string address, int port, string protocol = "TCP") => new()
+{
+    Protocol = protocol,
+    Address = System.Net.IPAddress.Parse(address),
+    Port = port,
+    Pid = 1234,
+    ProcessName = process
+};
+
+var anyBound = Endpoint("Minecraft Server", "0.0.0.0", 25565);
+Assert(anyBound.BindsAnyAddress, "0.0.0.0 must be treated as a wildcard bind.");
+Assert(anyBound.SuggestedLocalAddress == "127.0.0.1",
+    $"A wildcard bind should be tunnelled through loopback, got '{anyBound.SuggestedLocalAddress}'.");
+
+var lanBound = Endpoint("qbittorrent", "192.168.1.50", 8080);
+Assert(lanBound.SuggestedLocalAddress == "192.168.1.50",
+    $"A specific bind address must be kept, got '{lanBound.SuggestedLocalAddress}'.");
+
+var suggestedName = ServiceControl.SuggestServiceName(anyBound);
+Assert(suggestedName == "minecraft-server-25565", $"Unexpected suggested name '{suggestedName}'.");
+Assert(ConfigValidator.IsValidServiceName(suggestedName),
+    $"A suggested name must pass validation, got '{suggestedName}'.");
+
+foreach (var awkward in new[] { "My App (x86)", "steam++.exe", "____", "系统" })
+{
+    var awkwardName = ServiceControl.SuggestServiceName(Endpoint(awkward, "127.0.0.1", 4000));
+    Assert(ConfigValidator.IsValidServiceName(awkwardName),
+        $"Name generated from '{awkward}' must be valid for rathole, got '{awkwardName}'.");
+}
+
+// --- local port scan --------------------------------------------------------
+
+var scanned = PortScanner.Scan();
+Assert(scanned.All(endpoint => endpoint.Port is > 0 and <= 65535),
+    "Scanner returned a port outside 1..65535 (byte order bug?).");
+Assert(scanned.All(endpoint => endpoint.Protocol is "TCP" or "UDP"), "Scanner returned an unknown protocol.");
+Assert(scanned.Select(endpoint => (endpoint.Pid, endpoint.Protocol, endpoint.Port)).Distinct().Count() == scanned.Count,
+    "Scanner returned duplicate pid/protocol/port rows; merging is broken.");
+Console.WriteLine($"Scanned {scanned.Count} listening endpoint(s) on this machine.");
+
 Console.WriteLine("All tests passed.");

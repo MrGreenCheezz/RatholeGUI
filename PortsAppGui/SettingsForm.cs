@@ -1,10 +1,17 @@
+using PortsAppGui.UI;
+
 namespace PortsAppGui
 {
     public class SettingsForm : Form
     {
+        private const int CardWidth = 424;
+        private const int LabelWidth = 132;
+        private const int FieldWidth = 252;
+        private const int RowHeight = 46;
+
         private readonly ConfigStore _config;
         private readonly Action _save;
-        private readonly Dictionary<string, TextBox> _fields = new();
+        private readonly Dictionary<string, ModernTextBox> _fields = new();
 
         public SettingsForm(ConfigStore config, Action save)
         {
@@ -12,63 +19,163 @@ namespace PortsAppGui
             _save = save;
 
             Text = "RatholeGUI settings";
-            Size = new Size(560, 560);
-            StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
             MinimizeBox = false;
+            ShowInTaskbar = false;
+            Icon = Theme.LoadAppIcon();
+            Theme.ApplyTo(this);
 
-            var layout = new TableLayoutPanel
+            var serverCard = BuildSideCard(
+                "Server machine",
+                "The public box that accepts incoming traffic.",
+                new Point(24, 64),
+                new[]
+                {
+                    ("SSH host:port", nameof(config.ServerAddress), config.ServerAddress, false, "1.2.3.4:22"),
+                    ("Username", nameof(config.ServerUsername), config.ServerUsername, false, "root"),
+                    ("Password", nameof(config.ServerPassword), config.ServerPassword, true, ""),
+                    ("rathole directory", nameof(config.ServerRatholePath), config.ServerRatholePath, false, "/opt/rathole/"),
+                    ("Local TOML path", nameof(config.ServerTomlPath), config.ServerTomlPath, false, "server.toml")
+                },
+                isServer: true);
+
+            var clientCard = BuildSideCard(
+                "Client machine",
+                "Where the tunnelled applications actually run.",
+                new Point(24 + CardWidth + 20, 64),
+                new[]
+                {
+                    ("SSH host:port", nameof(config.ClientAddress), config.ClientAddress, false, "127.0.0.1:22"),
+                    ("Username", nameof(config.ClientUsername), config.ClientUsername, false, "user"),
+                    ("Password", nameof(config.ClientPassword), config.ClientPassword, true, ""),
+                    ("rathole directory", nameof(config.ClientRatholePath), config.ClientRatholePath, false, "/home/user/rathole/"),
+                    ("Local TOML path", nameof(config.ClientTomlPath), config.ClientTomlPath, false, "client.toml")
+                },
+                isServer: false);
+
+            var title = new Label
             {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(12),
-                ColumnCount = 2,
-                RowCount = 14,
-                AutoSize = true
+                Text = "Connection settings",
+                Font = Theme.Section,
+                ForeColor = Theme.Text,
+                AutoSize = true,
+                Location = new Point(24, 24)
             };
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            AddField(layout, "Server SSH host:port", nameof(config.ServerAddress), config.ServerAddress);
-            AddField(layout, "Server username", nameof(config.ServerUsername), config.ServerUsername);
-            AddField(layout, "Server password", nameof(config.ServerPassword), config.ServerPassword, true);
-            AddField(layout, "Server rathole path", nameof(config.ServerRatholePath), config.ServerRatholePath);
-            AddField(layout, "Server TOML path", nameof(config.ServerTomlPath), config.ServerTomlPath);
-            AddField(layout, "Client SSH host:port", nameof(config.ClientAddress), config.ClientAddress);
-            AddField(layout, "Client username", nameof(config.ClientUsername), config.ClientUsername);
-            AddField(layout, "Client password", nameof(config.ClientPassword), config.ClientPassword, true);
-            AddField(layout, "Client rathole path", nameof(config.ClientRatholePath), config.ClientRatholePath);
-            AddField(layout, "Client TOML path", nameof(config.ClientTomlPath), config.ClientTomlPath);
+            var warning = new Label
+            {
+                Text = "Credentials are stored as plain text in data.json — keep that file out of git.",
+                Font = Theme.Caption,
+                ForeColor = Theme.Warning,
+                AutoSize = true,
+                Location = new Point(24, serverCard.Bottom + 22)
+            };
 
-            var buttonPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-            var saveButton = new Button { Text = "Save", Width = 90 };
-            var cancelButton = new Button { Text = "Cancel", Width = 90 };
-            var testServerButton = new Button { Text = "Test server SSH", Width = 120 };
-            var testClientButton = new Button { Text = "Test client SSH", Width = 120 };
+            var saveButton = new ModernButton
+            {
+                Text = "Save",
+                Variant = ButtonVariant.Accent,
+                Size = new Size(110, 36)
+            };
+            var cancelButton = new ModernButton
+            {
+                Text = "Cancel",
+                Variant = ButtonVariant.Standard,
+                Size = new Size(110, 36),
+                DialogResult = DialogResult.Cancel
+            };
 
             saveButton.Click += (_, _) => SaveAndClose();
-            cancelButton.Click += (_, _) => Close();
-            testServerButton.Click += (_, _) => TestConnection(isServer: true);
-            testClientButton.Click += (_, _) => TestConnection(isServer: false);
 
-            buttonPanel.Controls.Add(saveButton);
-            buttonPanel.Controls.Add(cancelButton);
-            buttonPanel.Controls.Add(testClientButton);
-            buttonPanel.Controls.Add(testServerButton);
+            var contentWidth = 24 + CardWidth + 20 + CardWidth + 24;
+            ClientSize = new Size(contentWidth, serverCard.Bottom + 22 + 46);
 
-            layout.Controls.Add(buttonPanel, 0, layout.RowCount - 1);
-            layout.SetColumnSpan(buttonPanel, 2);
-            Controls.Add(layout);
+            saveButton.Location = new Point(ClientSize.Width - 24 - saveButton.Width, serverCard.Bottom + 16);
+            cancelButton.Location = new Point(saveButton.Left - 10 - cancelButton.Width, serverCard.Bottom + 16);
+
+            Controls.Add(title);
+            Controls.Add(serverCard);
+            Controls.Add(clientCard);
+            Controls.Add(warning);
+            Controls.Add(saveButton);
+            Controls.Add(cancelButton);
+
+            AcceptButton = saveButton;
+            CancelButton = cancelButton;
         }
 
-        private void AddField(TableLayoutPanel layout, string labelText, string key, string value, bool password = false)
+        private CardPanel BuildSideCard(string title, string subtitle, Point location,
+            (string Label, string Key, string Value, bool Password, string Placeholder)[] rows, bool isServer)
         {
-            var row = _fields.Count;
-            var label = new Label { Text = labelText, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
-            var textBox = new TextBox { Text = value, Dock = DockStyle.Fill, UseSystemPasswordChar = password };
-            _fields[key] = textBox;
-            layout.Controls.Add(label, 0, row);
-            layout.Controls.Add(textBox, 1, row);
+            var card = new CardPanel
+            {
+                Location = location,
+                Size = new Size(CardWidth, 66 + rows.Length * RowHeight + 54),
+                CornerRadius = 10,
+                StripeWidth = 3,
+                StripeColor = isServer ? Theme.Accent : Theme.Success
+            };
+
+            card.Controls.Add(new Label
+            {
+                Text = title,
+                Font = Theme.BodySemibold,
+                ForeColor = Theme.Text,
+                AutoSize = true,
+                Location = new Point(18, 16)
+            });
+
+            card.Controls.Add(new Label
+            {
+                Text = subtitle,
+                Font = Theme.Caption,
+                ForeColor = Theme.TextMuted,
+                AutoSize = true,
+                Location = new Point(18, 36)
+            });
+
+            var top = 66;
+            foreach (var row in rows)
+            {
+                card.Controls.Add(new Label
+                {
+                    Text = row.Label,
+                    Font = Theme.Body,
+                    ForeColor = Theme.TextMuted,
+                    AutoSize = false,
+                    Size = new Size(LabelWidth, 32),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Location = new Point(18, top)
+                });
+
+                var field = new ModernTextBox
+                {
+                    Text = row.Value,
+                    PlaceholderText = row.Placeholder,
+                    UseSystemPasswordChar = row.Password,
+                    Location = new Point(18 + LabelWidth, top),
+                    Size = new Size(FieldWidth, 32)
+                };
+
+                _fields[row.Key] = field;
+                card.Controls.Add(field);
+                top += RowHeight;
+            }
+
+            var testButton = new ModernButton
+            {
+                Text = "Test SSH connection",
+                Glyph = Glyphs.Network,
+                Variant = ButtonVariant.Standard,
+                Size = new Size(CardWidth - 36, 34),
+                Location = new Point(18, top + 4)
+            };
+            testButton.Click += (_, _) => TestConnection(isServer);
+            card.Controls.Add(testButton);
+
+            return card;
         }
 
         private void SaveFields()
@@ -99,7 +206,7 @@ namespace PortsAppGui
             var address = isServer ? _config.ServerAddress : _config.ClientAddress;
             if (!ConfigValidator.TryParseHostPort(address, out var host, out var port))
             {
-                MessageBox.Show("Address must be in host:port format.", "Invalid address", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Dialogs.Error(this, "Invalid address", "Address must be in host:port format, for example 10.0.0.5:22.");
                 return;
             }
 
@@ -107,9 +214,23 @@ namespace PortsAppGui
                 ? new SshConnector(host, port, _config.ServerUsername, _config.ServerPassword)
                 : new SshConnector(host, port, _config.ClientUsername, _config.ClientPassword);
 
-            var ok = connector.TestConnection(out var error);
-            MessageBox.Show(ok ? "SSH connection OK." : error, ok ? "Success" : "SSH error", MessageBoxButtons.OK,
-                ok ? MessageBoxIcon.Information : MessageBoxIcon.Error);
+            var previousCursor = Cursor;
+            Cursor = Cursors.WaitCursor;
+            bool ok;
+            string error;
+            try
+            {
+                ok = connector.TestConnection(out error);
+            }
+            finally
+            {
+                Cursor = previousCursor;
+            }
+
+            if (ok)
+                Dialogs.Success(this, "SSH connection OK", $"Connected to {host}:{port} successfully.");
+            else
+                Dialogs.Error(this, "SSH error", error);
         }
     }
 }
