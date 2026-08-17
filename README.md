@@ -9,6 +9,9 @@
 
 ## Overview
 
+<img width="991" height="726" alt="image" src="https://github.com/user-attachments/assets/7778eecc-da41-4047-b923-b7977b2117c8" />
+
+
 RatholeGUI simplifies the process of:
 
 - Generating `.toml` configuration files for Rathole;
