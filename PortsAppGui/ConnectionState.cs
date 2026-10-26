@@ -34,7 +34,7 @@ namespace PortsAppGui
         public static void Save(ConnectionState state)
         {
             var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Program.ConnectionStateFilePath, json);
+            DataFile.WriteAllTextAtomic(Program.ConnectionStateFilePath, json);
         }
 
         public static void Clear()

@@ -26,7 +26,12 @@ This tool is especially useful for setting up reverse proxy tunnels quickly with
 - Automatically generates Rathole configuration files based on configured services.
 - Supports secure upload of configs via SSH/SFTP to both server and client machines.
 - Provides basic remote control over Rathole execution.
-- Saves connection/configuration data in local `data.json`.
+- Saves connection/configuration data in local `data.json` (written atomically; a damaged file is
+  moved aside to `data.json.broken-<date>` instead of stopping the app).
+- Checks that rathole is still alive right after **Run** and shows the tail of `rathole.log` when it
+  exits immediately (bad config, port already in use, …).
+- SSH work runs in the background over one reused session per machine, so the window does not freeze
+  while the status is polled.
 - **Pick a port from a running application** instead of typing it by hand (see below).
 - Dark themed UI: custom-drawn controls, a resizable window and per-service validation shown inline.
 
@@ -115,7 +120,11 @@ Then fill:
 - SSH usernames and passwords;
 - Rathole directories on both machines;
 - Local paths for generated client/server `.toml` files;
-- Services that should be proxied.
+- `ControlPort` — the port rathole itself uses between the two machines (default `2333`, the
+  *rathole port* field in Settings); it must be open on the server and must not be reused by a service;
+- `KeepTunnelOnExit` — leave rathole running when RatholeGUI exits (*Keep the tunnel running after
+  RatholeGUI exits* in Settings). Off by default: exiting stops rathole on both machines;
+- Services that should be proxied. UDP forwarding is opt-in per service (the **UDP** checkbox).
 
 ## Example Generated Config
 

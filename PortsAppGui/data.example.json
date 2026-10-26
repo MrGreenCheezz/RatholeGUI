@@ -9,7 +9,9 @@
     "ServerUsername": "root",
     "ClientUsername": "user",
     "ServerPassword": "",
-    "ClientPassword": ""
+    "ClientPassword": "",
+    "ControlPort": "2333",
+    "KeepTunnelOnExit": false
   },
   "Services": [
     {

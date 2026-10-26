@@ -8,10 +8,12 @@ namespace PortsAppGui
         private const int LabelWidth = 132;
         private const int FieldWidth = 252;
         private const int RowHeight = 46;
+        private const int RowSlots = 6; // both cards get the same height even if one has fewer rows
 
         private readonly ConfigStore _config;
         private readonly Action _save;
         private readonly Dictionary<string, ModernTextBox> _fields = new();
+        private readonly ModernCheckBox _keepTunnelCheckBox;
 
         public SettingsForm(ConfigStore config, Action save)
         {
@@ -37,7 +39,8 @@ namespace PortsAppGui
                     ("Username", nameof(config.ServerUsername), config.ServerUsername, false, "root"),
                     ("Password", nameof(config.ServerPassword), config.ServerPassword, true, ""),
                     ("rathole directory", nameof(config.ServerRatholePath), config.ServerRatholePath, false, "/opt/rathole/"),
-                    ("Local TOML path", nameof(config.ServerTomlPath), config.ServerTomlPath, false, "server.toml")
+                    ("Local TOML path", nameof(config.ServerTomlPath), config.ServerTomlPath, false, "server.toml"),
+                    ("rathole port", nameof(config.ControlPort), config.ControlPort, false, TomlGenerator.DefaultControlPort)
                 },
                 isServer: true);
 
@@ -70,7 +73,14 @@ namespace PortsAppGui
                 Font = Theme.Caption,
                 ForeColor = Theme.Warning,
                 AutoSize = true,
-                Location = new Point(24, serverCard.Bottom + 22)
+                Location = new Point(24, serverCard.Bottom + 52)
+            };
+
+            _keepTunnelCheckBox = new ModernCheckBox
+            {
+                Text = "Keep the tunnel running after RatholeGUI exits",
+                Checked = config.KeepTunnelOnExit,
+                Location = new Point(24, serverCard.Bottom + 20)
             };
 
             var saveButton = new ModernButton
@@ -90,7 +100,7 @@ namespace PortsAppGui
             saveButton.Click += (_, _) => SaveAndClose();
 
             var contentWidth = 24 + CardWidth + 20 + CardWidth + 24;
-            ClientSize = new Size(contentWidth, serverCard.Bottom + 22 + 46);
+            ClientSize = new Size(contentWidth, serverCard.Bottom + 52 + 38);
 
             saveButton.Location = new Point(ClientSize.Width - 24 - saveButton.Width, serverCard.Bottom + 16);
             cancelButton.Location = new Point(saveButton.Left - 10 - cancelButton.Width, serverCard.Bottom + 16);
@@ -98,6 +108,7 @@ namespace PortsAppGui
             Controls.Add(title);
             Controls.Add(serverCard);
             Controls.Add(clientCard);
+            Controls.Add(_keepTunnelCheckBox);
             Controls.Add(warning);
             Controls.Add(saveButton);
             Controls.Add(cancelButton);
@@ -112,7 +123,7 @@ namespace PortsAppGui
             var card = new CardPanel
             {
                 Location = location,
-                Size = new Size(CardWidth, 66 + rows.Length * RowHeight + 54),
+                Size = new Size(CardWidth, 66 + RowSlots * RowHeight + 54),
                 CornerRadius = 10,
                 StripeWidth = 3,
                 StripeColor = isServer ? Theme.Accent : Theme.Success
@@ -170,7 +181,7 @@ namespace PortsAppGui
                 Glyph = Glyphs.Network,
                 Variant = ButtonVariant.Standard,
                 Size = new Size(CardWidth - 36, 34),
-                Location = new Point(18, top + 4)
+                Location = new Point(18, 66 + RowSlots * RowHeight + 4)
             };
             testButton.Click += (_, _) => TestConnection(isServer);
             card.Controls.Add(testButton);
@@ -190,6 +201,8 @@ namespace PortsAppGui
             _config.ClientPassword = _fields[nameof(_config.ClientPassword)].Text;
             _config.ClientRatholePath = _fields[nameof(_config.ClientRatholePath)].Text;
             _config.ClientTomlPath = _fields[nameof(_config.ClientTomlPath)].Text;
+            _config.ControlPort = _fields[nameof(_config.ControlPort)].Text.Trim();
+            _config.KeepTunnelOnExit = _keepTunnelCheckBox.Checked;
         }
 
         private void SaveAndClose()
@@ -210,7 +223,7 @@ namespace PortsAppGui
                 return;
             }
 
-            var connector = isServer
+            using var connector = isServer
                 ? new SshConnector(host, port, _config.ServerUsername, _config.ServerPassword)
                 : new SshConnector(host, port, _config.ClientUsername, _config.ClientPassword);
 
