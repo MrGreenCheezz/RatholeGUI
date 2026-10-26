@@ -66,9 +66,86 @@ AssertContains(errors, "server port");
 AssertContains(errors, "duplicate service name");
 AssertContains(errors, "duplicate server port");
 
-var generated = TomlGenerator.GenerateServerConfig(validServices);
+var generated = TomlGenerator.GenerateServerConfig(config, validServices);
 Assert(generated.Contains("[server.services.web]"), "Expected enabled service in server TOML.");
 Assert(!generated.Contains("disabled-bad"), "Expected disabled service to be skipped in server TOML.");
+Assert(generated.Contains("bind_addr = \"0.0.0.0:2333\""), "Expected the default rathole port in server TOML.");
+Assert(!generated.Contains("_udp"), "UDP is opt-in: a service without UdpEnabled must not get a UDP twin.");
+Assert(!new Service().UdpEnabled, "New services must not forward UDP by default.");
+
+// --- rathole control port ---------------------------------------------------
+
+var customPort = new ConfigStore
+{
+    ServerAddress = config.ServerAddress,
+    ClientAddress = config.ClientAddress,
+    ServerTomlPath = config.ServerTomlPath,
+    ClientTomlPath = config.ClientTomlPath,
+    ServerRatholePath = config.ServerRatholePath,
+    ClientRatholePath = config.ClientRatholePath,
+    ControlPort = "7000"
+};
+Assert(TomlGenerator.GenerateServerConfig(customPort, validServices).Contains("bind_addr = \"0.0.0.0:7000\""),
+    "Server TOML must bind the configured rathole port.");
+Assert(TomlGenerator.GenerateClientConfig(customPort, validServices).Contains("remote_addr = \"server.example.com:7000\""),
+    "Client TOML must connect to the configured rathole port.");
+
+var clashing = new[]
+{
+    new Service { ServiceName = "clash", ServiceToken = "t", ClientAddress = "127.0.0.1", ClientPort = "80", ServerAddress = "0.0.0.0", ServerPort = "7000" }
+};
+AssertContains(ConfigValidator.Validate(customPort, clashing), "taken by rathole");
+customPort.ControlPort = "0";
+AssertContains(ConfigValidator.Validate(customPort, validServices), "rathole port");
+
+// --- TOML escaping ----------------------------------------------------------
+
+Assert(TomlGenerator.Quote("plain") == "\"plain\"", "Plain strings must only be wrapped in quotes.");
+Assert(TomlGenerator.Quote("a\"b\\c") == "\"a\\\"b\\\\c\"", $"Quotes and backslashes must be escaped, got {TomlGenerator.Quote("a\"b\\c")}.");
+Assert(TomlGenerator.Quote("line\nbreak\u0001") == "\"line\\nbreak\\u0001\"", "Control characters must be escaped.");
+
+var hostile = new[]
+{
+    new Service
+    {
+        ServiceName = "web", ServiceToken = "tok\"en\ninjected = true", ClientAddress = "127.0.0.1", ClientPort = "8080",
+        ServerAddress = "0.0.0.0", ServerPort = "8080", UdpEnabled = true
+    }
+};
+var hostileToml = TomlGenerator.GenerateServerConfig(config, hostile);
+Assert(hostileToml.Contains("token = \"tok\\\"en\\ninjected = true\""), $"Token must stay one TOML string:{Environment.NewLine}{hostileToml}");
+Assert(!hostileToml.Split('\n').Any(line => line.StartsWith("injected")), "A token must not be able to add TOML keys.");
+Assert(hostileToml.Contains("token = \"tok\\\"en\\ninjected = true_udp\""), "The UDP token must be escaped too.");
+
+// --- data.json --------------------------------------------------------------
+
+var tempDir = Directory.CreateTempSubdirectory("ratholegui-tests").FullName;
+try
+{
+    var dataPath = Path.Combine(tempDir, "data.json");
+    Assert(DataFile.Load(dataPath, out _) == null, "A missing data.json must load as null.");
+
+    DataFile.Save(dataPath, new JsonDataClass { Configs = customPort, Services = validServices.ToList() });
+    Assert(!File.Exists(dataPath + ".tmp"), "The temporary file must be renamed over data.json.");
+    var reloaded = DataFile.Load(dataPath, out var noBrokenCopy);
+    Assert(noBrokenCopy == null && reloaded != null, "A saved data.json must load back.");
+    Assert(reloaded!.Services.Count == 2 && reloaded.Configs.ControlPort == "0", "Saved values must round-trip.");
+
+    File.WriteAllText(dataPath, "{\"Configs\": {\"ServerAdress\": \"half-writ");
+    var recovered = DataFile.Load(dataPath, out var brokenCopy);
+    Assert(recovered != null && recovered.Services.Count == 0, "A damaged data.json must give an empty configuration.");
+    Assert(brokenCopy != null && File.Exists(brokenCopy) && !File.Exists(dataPath),
+        "A damaged data.json must be moved aside, not overwritten.");
+
+    File.WriteAllText(dataPath, "{\"Configs\": {\"ServerAdress\": \"old:22\"}}");
+    var legacy = DataFile.Load(dataPath, out _)!;
+    Assert(legacy.Configs.ControlPort == "2333" && !legacy.Configs.KeepTunnelOnExit,
+        "Files written by older versions must get the defaults for new settings.");
+}
+finally
+{
+    Directory.Delete(tempDir, recursive: true);
+}
 
 var matchingState = new ConnectionState
 {

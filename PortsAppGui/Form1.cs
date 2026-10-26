@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using PortsAppGui.UI;
@@ -17,6 +16,7 @@ namespace PortsAppGui
         private SshConnector? _clientConnector;
         private SshConnector? _serverConnector;
         private readonly Timer _statusTimer;
+        private readonly Timer _saveTimer;
         private readonly NotifyIcon _trayIcon;
         private readonly ContextMenuStrip _trayMenu;
 
@@ -29,6 +29,13 @@ namespace PortsAppGui
         private bool _uiLoaded;
         private bool _isClosingFromTray;
         private bool _isSyncingCardWidths;
+        private bool _isBusy;
+        private bool _shutdownReady;
+        private bool _isExiting;
+        private int _connectorGeneration;
+
+        // How long rathole gets to read its config and bind ports before we check it is still alive.
+        private static readonly TimeSpan StartupGracePeriod = TimeSpan.FromMilliseconds(1500);
 
         public Form1()
         {
@@ -45,6 +52,10 @@ namespace PortsAppGui
 
             _statusTimer = new Timer { Interval = 3000 };
             _statusTimer.Tick += async (_, _) => await RefreshStatusAsync();
+
+            // Typing in a service card saves after a short pause instead of on every keystroke.
+            _saveTimer = new Timer { Interval = 500 };
+            _saveTimer.Tick += (_, _) => SaveData();
 
             _trayMenu = new ContextMenuStrip
             {
@@ -76,9 +87,13 @@ namespace PortsAppGui
         private async void MainForm_Load(object? sender, EventArgs e)
         {
             TryStartUbuntu();
-            _dataObject = LoadJsonFromDataFile();
+            _dataObject = LoadDataFile(out var brokenCopyPath);
             LoadUiFromData();
             _uiLoaded = true;
+
+            if (brokenCopyPath != null)
+                Dialogs.Error(this, "data.json could not be read",
+                    $"The file was damaged and has been moved to {brokenCopyPath}.{Environment.NewLine}RatholeGUI started with an empty configuration.");
 
             RebuildConnectors();
             if (_clientConnector == null || _serverConnector == null)
@@ -290,38 +305,23 @@ namespace PortsAppGui
 
         #region Data
 
-        public JsonDataClass LoadJsonFromDataFile()
+        private JsonDataClass LoadDataFile(out string? brokenCopyPath)
         {
-            if (!File.Exists(Program.DataFilePath))
-            {
-                // SaveData creates the file itself; opening it here first would keep the
-                // handle locked for the whole method and make the write fail.
-                _dataObject = new JsonDataClass();
-                SaveData();
-                _isFreshStart = true;
-                return _dataObject;
-            }
-
-            try
-            {
-                string jsonFromFile = File.ReadAllText(Program.DataFilePath);
-                var data = JsonSerializer.Deserialize<JsonDataClass>(jsonFromFile) ?? new JsonDataClass();
-                data.Services ??= new List<Service>();
-                data.Configs ??= new ConfigStore();
+            var data = DataFile.Load(Program.DataFilePath, out brokenCopyPath);
+            if (data != null && brokenCopyPath == null)
                 return data;
-            }
-            catch (Exception)
-            {
-                throw new FileLoadException("No file");
-            }
+
+            _dataObject = data ?? new JsonDataClass();
+            SaveData();
+            _isFreshStart = true;
+            return _dataObject;
         }
 
         public void SaveData()
         {
+            _saveTimer.Stop();
             _dataObject.Services = GetCurrentServices();
-
-            string dataToWrite = JsonSerializer.Serialize(_dataObject, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Program.DataFilePath, dataToWrite);
+            DataFile.Save(Program.DataFilePath, _dataObject);
         }
 
         private void AutoSaveData()
@@ -329,8 +329,9 @@ namespace PortsAppGui
             if (!_uiLoaded)
                 return;
 
-            SaveData();
             ApplyServiceValidationStates();
+            _saveTimer.Stop();
+            _saveTimer.Start();
         }
 
         private List<Service> GetCurrentServices()
@@ -349,47 +350,77 @@ namespace PortsAppGui
             var services = GetCurrentServices();
 
             File.WriteAllText(clientFilePath, TomlGenerator.GenerateClientConfig(_dataObject.Configs, services), Encoding.UTF8);
-            File.WriteAllText(serverFilePath, TomlGenerator.GenerateServerConfig(services), Encoding.UTF8);
+            File.WriteAllText(serverFilePath, TomlGenerator.GenerateServerConfig(_dataObject.Configs, services), Encoding.UTF8);
         }
 
         #endregion
 
         #region Connectors and status
 
+        /// <summary>
+        /// Points the connectors at the current settings. A connector whose SSH target did not change
+        /// is kept, together with its open session and the PID it started.
+        /// </summary>
         private void RebuildConnectors()
         {
-            _clientConnector = null;
-            _serverConnector = null;
+            _connectorGeneration++;
             _clientBinaryOk = false;
             _serverBinaryOk = false;
             _clientSshFailed = false;
             _serverSshFailed = false;
 
-            if (!ConfigValidator.TryParseHostPort(_dataObject.Configs.ClientAddress, out var clientHost, out var clientPort) ||
-                !ConfigValidator.TryParseHostPort(_dataObject.Configs.ServerAddress, out var serverHost, out var serverPort))
-            {
-                return;
-            }
+            var config = _dataObject.Configs;
+            _clientConnector = Reuse(_clientConnector, config.ClientAddress, config.ClientUsername, config.ClientPassword);
+            _serverConnector = Reuse(_serverConnector, config.ServerAddress, config.ServerUsername, config.ServerPassword);
 
-            _clientConnector = new SshConnector(clientHost, clientPort, _dataObject.Configs.ClientUsername,
-                _dataObject.Configs.ClientPassword);
-            _serverConnector = new SshConnector(serverHost, serverPort, _dataObject.Configs.ServerUsername,
-                _dataObject.Configs.ServerPassword);
+            static SshConnector? Reuse(SshConnector? current, string address, string username, string password)
+            {
+                if (ConfigValidator.TryParseHostPort(address, out var host, out var port) &&
+                    current != null && current.HasSameTarget(host, port, username, password))
+                    return current;
+
+                current?.Dispose();
+                return ConfigValidator.TryParseHostPort(address, out host, out port)
+                    ? new SshConnector(host, port, username, password)
+                    : null;
+            }
         }
+
+        private bool BinariesOk => _clientBinaryOk && _serverBinaryOk && !_clientSshFailed && !_serverSshFailed;
+
+        /// <summary>What one round of SSH checks found. Null = that machine could not be reached.</summary>
+        private sealed record StatusProbe(bool? ClientBinary, bool? ServerBinary, bool? ClientRunning, bool? ServerRunning);
 
         private async Task RefreshStatusAsync()
         {
-            if (_isStatusCheckRunning)
+            if (_isStatusCheckRunning || _isBusy)
                 return;
+
+            var client = _clientConnector;
+            var server = _serverConnector;
+            if (client == null || server == null)
+            {
+                SetStatus(StatusKind.Error, "Not configured", "Server/Client address must be in host:port format.");
+                RunButton.Enabled = false;
+                StopButton.Enabled = false;
+                return;
+            }
 
             _isStatusCheckRunning = true;
             try
             {
-                if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
-                    await Task.Run(CheckRatholeBinaries);
+                var generation = _connectorGeneration;
+                var checkBinaries = !BinariesOk;
+                var clientDir = _dataObject.Configs.ClientRatholePath;
+                var serverDir = _dataObject.Configs.ServerRatholePath;
 
-                if (!IsDisposed && !Disposing)
-                    RefreshStatus();
+                var probe = await Task.Run(() => ProbeStatus(client, server, checkBinaries, clientDir, serverDir));
+
+                // Settings changed or Run/Stop started while we were waiting: this result is stale.
+                if (IsDisposed || Disposing || _isBusy || generation != _connectorGeneration)
+                    return;
+
+                ApplyStatus(probe);
             }
             finally
             {
@@ -397,24 +428,34 @@ namespace PortsAppGui
             }
         }
 
-        private void CheckRatholeBinaries()
+        private static StatusProbe ProbeStatus(SshConnector client, SshConnector server, bool checkBinaries,
+            string clientDir, string serverDir)
         {
-            if (_clientConnector == null || _serverConnector == null)
+            if (checkBinaries)
             {
-                _clientSshFailed = true;
-                _serverSshFailed = true;
-                _clientBinaryOk = false;
-                _serverBinaryOk = false;
+                var clientBinary = client.RatholeBinaryExists(clientDir);
+                var serverBinary = server.RatholeBinaryExists(serverDir);
+                if (clientBinary != true || serverBinary != true)
+                    return new StatusProbe(clientBinary, serverBinary, null, null);
+            }
+
+            return new StatusProbe(true, true, client.IsRatholeRunning(), server.IsRatholeRunning());
+        }
+
+        private void ApplyStatus(StatusProbe probe)
+        {
+            _clientBinaryOk = probe.ClientBinary == true;
+            _serverBinaryOk = probe.ServerBinary == true;
+            _clientSshFailed = probe.ClientBinary == null || (_clientBinaryOk && _serverBinaryOk && probe.ClientRunning == null);
+            _serverSshFailed = probe.ServerBinary == null || (_clientBinaryOk && _serverBinaryOk && probe.ServerRunning == null);
+
+            if (!BinariesOk)
+            {
+                ApplyBinaryStatus();
                 return;
             }
 
-            var clientResult = _clientConnector.RatholeBinaryExists(_dataObject.Configs.ClientRatholePath);
-            var serverResult = _serverConnector.RatholeBinaryExists(_dataObject.Configs.ServerRatholePath);
-
-            _clientSshFailed = clientResult == null;
-            _serverSshFailed = serverResult == null;
-            _clientBinaryOk = clientResult == true;
-            _serverBinaryOk = serverResult == true;
+            ApplyRunningStatus(probe.ClientRunning == true, probe.ServerRunning == true);
         }
 
         private void ApplyBinaryStatus()
@@ -444,24 +485,8 @@ namespace PortsAppGui
             StopButton.Enabled = false;
         }
 
-        private void RefreshStatus()
+        private void ApplyRunningStatus(bool clientUp, bool serverUp)
         {
-            if (_clientConnector == null || _serverConnector == null)
-            {
-                SetStatus(StatusKind.Error, "Not configured", "Server/Client address must be in host:port format.");
-                RunButton.Enabled = false;
-                StopButton.Enabled = false;
-                return;
-            }
-
-            if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed)
-            {
-                ApplyBinaryStatus();
-                return;
-            }
-
-            bool clientUp = _clientConnector.IsRatholeRunning();
-            bool serverUp = _serverConnector.IsRatholeRunning();
             bool running = clientUp && serverUp;
             bool anyRunning = clientUp || serverUp;
 
@@ -478,6 +503,33 @@ namespace PortsAppGui
 
             if (!anyRunning)
                 ConnectionState.Clear();
+        }
+
+        /// <summary>
+        /// Locks Run/Stop, the status poll and everything that could swap the SSH connectors while a
+        /// long SSH operation runs in the background.
+        /// </summary>
+        private void BeginBusy(string pillText, string detail)
+        {
+            _isBusy = true;
+            SetStatus(StatusKind.Busy, pillText, detail);
+            RunButton.Enabled = false;
+            StopButton.Enabled = false;
+            SetConnectionCommandsEnabled(false);
+        }
+
+        private void EndBusy()
+        {
+            _isBusy = false;
+            SetConnectionCommandsEnabled(true);
+        }
+
+        private void SetConnectionCommandsEnabled(bool enabled)
+        {
+            SettingsButton.Enabled = enabled;
+            HintButton.Enabled = enabled;
+            TestSshButton.Enabled = enabled;
+            LogsButton.Enabled = enabled;
         }
 
         private void RestoreConnectionState()
@@ -560,6 +612,10 @@ namespace PortsAppGui
                 .Where(port => port > 0)
                 .ToHashSet();
 
+            // rathole's own port is busy on the server too.
+            if (int.TryParse(_dataObject.Configs.ControlPort, out var controlPort))
+                taken.Add(controlPort);
+
             var candidate = preferred;
             while (candidate <= 65535 && taken.Contains(candidate))
                 candidate++;
@@ -578,9 +634,9 @@ namespace PortsAppGui
             OpenSettings();
         }
 
-        private void TestSshButton_Click(object? sender, EventArgs e)
+        private async void TestSshButton_Click(object? sender, EventArgs e)
         {
-            TestSshConnections();
+            await TestSshConnectionsAsync();
         }
 
         private void PreviewTomlButton_Click(object? sender, EventArgs e)
@@ -593,61 +649,108 @@ namespace PortsAppGui
             OpenLogs();
         }
 
-        private void RunButton_Click(object? sender, EventArgs e)
+        private async void RunButton_Click(object? sender, EventArgs e)
         {
+            if (_isBusy)
+                return;
+
+            SaveData();
+            var errors = ConfigValidator.Validate(_dataObject.Configs, GetCurrentServices());
+            if (errors.Count > 0)
+            {
+                Dialogs.Error(this, "Configuration is not valid", string.Join(Environment.NewLine, errors));
+                ApplyServiceValidationStates();
+                return;
+            }
+
+            RebuildConnectors();
+            var client = _clientConnector;
+            var server = _serverConnector;
+            if (client == null || server == null)
+                return; // Validate() already rejects addresses that are not host:port
+
+            BeginBusy("Connecting…", "Uploading configs and starting rathole…");
             try
             {
-                SaveData();
-                var errors = ConfigValidator.Validate(_dataObject.Configs, GetCurrentServices());
-                if (errors.Count > 0)
-                {
-                    Dialogs.Error(this, "Configuration is not valid", string.Join(Environment.NewLine, errors));
-                    ApplyServiceValidationStates();
-                    return;
-                }
-
-                RebuildConnectors();
-                SetStatus(StatusKind.Busy, "Connecting…", "Uploading configs and starting rathole…");
-                RunButton.Enabled = false;
-                StopButton.Enabled = false;
-                Update(); // the SSH calls below block the UI thread; show the new status first
-
-                CheckRatholeBinaries();
-                if (!_clientBinaryOk || !_serverBinaryOk || _clientSshFailed || _serverSshFailed || _clientConnector == null || _serverConnector == null)
-                {
-                    ApplyBinaryStatus();
-                    return;
-                }
-
                 WriteRulesToFile();
+                var config = _dataObject.Configs;
+                var binaryProblem = await Task.Run(() => StartTunnel(client, server, config));
+                EndBusy();
 
-                var serverRemoteConfigPath = CombineRemotePath(_dataObject.Configs.ServerRatholePath, _dataObject.Configs.ServerTomlPath);
-                var clientRemoteConfigPath = CombineRemotePath(_dataObject.Configs.ClientRatholePath, _dataObject.Configs.ClientTomlPath);
+                if (binaryProblem != null)
+                {
+                    ApplyStatus(binaryProblem);
+                    return;
+                }
 
-                _serverConnector.SendFile(_dataObject.Configs.ServerTomlPath, serverRemoteConfigPath);
-                _serverConnector.BeginRatholeConnection(serverRemoteConfigPath, _dataObject.Configs.ServerRatholePath);
-                _clientConnector.SendFile(_dataObject.Configs.ClientTomlPath, clientRemoteConfigPath);
-                _clientConnector.BeginRatholeConnection(clientRemoteConfigPath, _dataObject.Configs.ClientRatholePath);
                 SaveConnectionState();
-
-                RefreshStatus();
+                _clientBinaryOk = _serverBinaryOk = true;
+                _clientSshFailed = _serverSshFailed = false;
+                ApplyRunningStatus(clientUp: true, serverUp: true);
             }
             catch (Exception ex)
             {
-                var stopErrors = StopRatholeEverywhere();
-                SetStatus(StatusKind.Error, "Failed to start", ex.Message);
+                var stopErrors = await StopRatholeEverywhereAsync();
+                EndBusy();
+                SetStatus(StatusKind.Error, "Failed to start", FirstLine(ex.Message));
                 RunButton.Enabled = stopErrors.Count == 0;
                 StopButton.Enabled = stopErrors.Count > 0;
                 var message = stopErrors.Count == 0
                     ? ex.Message
                     : $"{ex.Message}{Environment.NewLine}{Environment.NewLine}Cleanup errors:{Environment.NewLine}{string.Join(Environment.NewLine, stopErrors)}";
-                Dialogs.Error(this, "SSH error", message);
+                Dialogs.Error(this, "Failed to start rathole", message);
             }
+            finally
+            {
+                EndBusy();
+            }
+
+            static string FirstLine(string text) => text.Split('\n', 2)[0].TrimEnd('\r');
         }
 
-        private void StopButton_Click(object? sender, EventArgs e)
+        /// <summary>
+        /// Runs on a worker thread. Returns the probe when a rathole binary is missing or SSH is down
+        /// (nothing was started); throws when uploading or starting fails.
+        /// </summary>
+        private static StatusProbe? StartTunnel(SshConnector client, SshConnector server, ConfigStore config)
         {
-            var stopErrors = StopRatholeEverywhere();
+            var clientBinary = client.RatholeBinaryExists(config.ClientRatholePath);
+            var serverBinary = server.RatholeBinaryExists(config.ServerRatholePath);
+            if (clientBinary != true || serverBinary != true)
+                return new StatusProbe(clientBinary, serverBinary, null, null);
+
+            var serverRemoteConfigPath = CombineRemotePath(config.ServerRatholePath, config.ServerTomlPath);
+            var clientRemoteConfigPath = CombineRemotePath(config.ClientRatholePath, config.ClientTomlPath);
+
+            server.SendFile(config.ServerTomlPath, serverRemoteConfigPath);
+            server.StartRathole(serverRemoteConfigPath, config.ServerRatholePath);
+            client.SendFile(config.ClientTomlPath, clientRemoteConfigPath);
+            client.StartRathole(clientRemoteConfigPath, config.ClientRatholePath);
+
+            // A bad config or a port that is already taken makes rathole exit almost immediately;
+            // report it now instead of showing "running" until the next poll.
+            Thread.Sleep(StartupGracePeriod);
+            server.EnsureStarted();
+            client.EnsureStarted();
+            return null;
+        }
+
+        private async void StopButton_Click(object? sender, EventArgs e)
+        {
+            if (_isBusy)
+                return;
+
+            BeginBusy("Stopping…", "Stopping rathole on both machines…");
+            List<string> stopErrors;
+            try
+            {
+                stopErrors = await StopRatholeEverywhereAsync();
+            }
+            finally
+            {
+                EndBusy();
+            }
+
             if (stopErrors.Count > 0)
             {
                 SetStatus(StatusKind.Error, "Cleanup failed", "Failed to stop every rathole process.");
@@ -657,32 +760,52 @@ namespace PortsAppGui
                 return;
             }
 
-            RefreshStatus();
+            ApplyRunningStatus(clientUp: false, serverUp: false);
         }
 
+        private async Task<List<string>> StopRatholeEverywhereAsync()
+        {
+            var client = _clientConnector;
+            var server = _serverConnector;
+            var hasSavedConnection = ConnectionState.Load() != null;
+            var errors = await Task.Run(() => StopRathole(client, server, hasSavedConnection));
+            return RecordStopResult(errors);
+        }
+
+        /// <summary>Blocking variant for when Windows is shutting down and there is no time to await.</summary>
         private List<string> StopRatholeEverywhere()
         {
-            var errors = new List<string>();
-            var hasSavedConnection = ConnectionState.Load() != null;
-            Stop("Client", _clientConnector);
-            Stop("Server", _serverConnector);
+            var errors = StopRathole(_clientConnector, _serverConnector, ConnectionState.Load() != null);
+            return RecordStopResult(errors);
+        }
 
+        private List<string> RecordStopResult(List<string> errors)
+        {
             if (errors.Count == 0)
-                ConnectionState.Clear();
-            else
             {
-                _clientSshFailed = true;
-                _serverSshFailed = true;
-                try
-                {
-                    SaveConnectionState();
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"State: {ex.Message}");
-                }
+                ConnectionState.Clear();
+                return errors;
             }
 
+            _clientSshFailed = true;
+            _serverSshFailed = true;
+            try
+            {
+                SaveConnectionState();
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"State: {ex.Message}");
+            }
+
+            return errors;
+        }
+
+        private static List<string> StopRathole(SshConnector? client, SshConnector? server, bool hasSavedConnection)
+        {
+            var errors = new List<string>();
+            Stop("Client", client);
+            Stop("Server", server);
             return errors;
 
             void Stop(string name, SshConnector? connector)
@@ -725,25 +848,45 @@ namespace PortsAppGui
                 RebuildConnectors();
                 RestoreConnectionState();
                 UpdateServicesUi();
-                RefreshStatus();
+                if (!_isBusy)
+                    SetStatus(StatusKind.Busy, "Checking…", "Checking rathole on both machines…");
+                _ = RefreshStatusAsync();
             }
         }
 
-        private void TestSshConnections()
+        private async Task TestSshConnectionsAsync()
         {
             SaveData();
             RebuildConnectors();
-            if (_serverConnector == null || _clientConnector == null)
+            var server = _serverConnector;
+            var client = _clientConnector;
+            if (server == null || client == null)
             {
                 Dialogs.Error(this, "Invalid settings", "Server/Client address must be in host:port format.");
                 return;
             }
 
-            var serverOk = _serverConnector.TestConnection(out var serverError);
-            var clientOk = _clientConnector.TestConnection(out var clientError);
-            var message = $"Server SSH: {(serverOk ? "OK" : serverError)}{Environment.NewLine}Client SSH: {(clientOk ? "OK" : clientError)}";
+            TestSshButton.Enabled = false;
+            UseWaitCursor = true;
+            string message;
+            bool allOk;
+            try
+            {
+                (message, allOk) = await Task.Run(() =>
+                {
+                    var serverOk = server.TestConnection(out var serverError);
+                    var clientOk = client.TestConnection(out var clientError);
+                    return ($"Server SSH: {(serverOk ? "OK" : serverError)}{Environment.NewLine}Client SSH: {(clientOk ? "OK" : clientError)}",
+                        serverOk && clientOk);
+                });
+            }
+            finally
+            {
+                UseWaitCursor = false;
+                TestSshButton.Enabled = !_isBusy;
+            }
 
-            if (serverOk && clientOk)
+            if (allOk)
                 Dialogs.Success(this, "SSH test", message);
             else
                 Dialogs.Error(this, "SSH test", message);
@@ -761,22 +904,24 @@ namespace PortsAppGui
 
             using var form = new PreviewForm(
                 TomlGenerator.GenerateClientConfig(_dataObject.Configs, GetCurrentServices()),
-                TomlGenerator.GenerateServerConfig(GetCurrentServices()));
+                TomlGenerator.GenerateServerConfig(_dataObject.Configs, GetCurrentServices()));
             form.ShowDialog(this);
         }
 
         private void OpenLogs()
         {
             RebuildConnectors();
-            if (_serverConnector == null || _clientConnector == null)
+            var server = _serverConnector;
+            var client = _clientConnector;
+            if (server == null || client == null)
             {
                 Dialogs.Error(this, "Invalid settings", "Server/Client address must be in host:port format.");
                 return;
             }
 
             using var form = new LogViewerForm(
-                () => _serverConnector.ReadRatholeLog(),
-                () => _clientConnector.ReadRatholeLog());
+                () => server.ReadRatholeLog(),
+                () => client.ReadRatholeLog());
             form.ShowDialog(this);
         }
 
@@ -784,9 +929,9 @@ namespace PortsAppGui
 
         #region Window lifetime
 
-        private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
+        private async void Form1_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            if (!_isClosingFromTray && e.CloseReason == CloseReason.UserClosing)
+            if (!_isClosingFromTray && !_shutdownReady && e.CloseReason == CloseReason.UserClosing)
             {
                 e.Cancel = true;
                 Hide();
@@ -794,24 +939,85 @@ namespace PortsAppGui
                 return;
             }
 
-            _statusTimer.Stop();
-            var stopErrors = StopRatholeEverywhere();
-            if (stopErrors.Count > 0 && e.CloseReason == CloseReason.UserClosing &&
-                !Dialogs.Confirm(this, "Rathole cleanup failed",
-                    $"Could not stop every rathole process:{Environment.NewLine}{string.Join(Environment.NewLine, stopErrors)}{Environment.NewLine}{Environment.NewLine}Exit anyway?",
-                    "Exit anyway", "Stay open"))
+            if (!_shutdownReady && e.CloseReason == CloseReason.UserClosing)
             {
+                // Stopping rathole goes over SSH: do it without freezing the window, then close for real.
                 e.Cancel = true;
-                _isClosingFromTray = false;
-                _statusTimer.Start();
+                await PrepareShutdownAsync();
                 return;
+            }
+
+            _statusTimer.Stop();
+            if (!_shutdownReady)
+            {
+                // Windows is shutting down or the app is being terminated: no time for dialogs.
+                try
+                {
+                    SaveData();
+                }
+                catch
+                {
+                    // Still stop rathole below even if the disk is unavailable.
+                }
+
+                if (!_dataObject.Configs.KeepTunnelOnExit)
+                    StopRatholeEverywhere();
             }
 
             if (process is { HasExited: false })
                 process.Kill(true);
+            _clientConnector?.Dispose();
+            _serverConnector?.Dispose();
             _trayIcon.Visible = false;
             _trayIcon.Dispose();
             _trayMenu.Dispose();
+        }
+
+        private async Task PrepareShutdownAsync()
+        {
+            if (_isExiting)
+                return; // Exit was clicked again while rathole is being stopped
+
+            if (_isBusy)
+            {
+                // Run/Stop is still talking to the servers; let it finish first.
+                _isClosingFromTray = false;
+                Dialogs.Info(this, "RatholeGUI is busy", "Wait until the current operation finishes, then exit again.");
+                return;
+            }
+
+            _isExiting = true;
+            _statusTimer.Stop();
+            SaveData();
+
+            if (!_dataObject.Configs.KeepTunnelOnExit)
+            {
+                BeginBusy("Stopping…", "Stopping rathole before exit…");
+                List<string> stopErrors;
+                try
+                {
+                    stopErrors = await StopRatholeEverywhereAsync();
+                }
+                finally
+                {
+                    EndBusy();
+                }
+
+                if (stopErrors.Count > 0 &&
+                    !Dialogs.Confirm(this, "Rathole cleanup failed",
+                        $"Could not stop every rathole process:{Environment.NewLine}{string.Join(Environment.NewLine, stopErrors)}{Environment.NewLine}{Environment.NewLine}Exit anyway?",
+                        "Exit anyway", "Stay open"))
+                {
+                    _isExiting = false;
+                    _isClosingFromTray = false;
+                    _statusTimer.Start();
+                    _ = RefreshStatusAsync();
+                    return;
+                }
+            }
+
+            _shutdownReady = true;
+            Close();
         }
 
         private void Form1_Resize(object? sender, EventArgs e)
@@ -828,11 +1034,5 @@ namespace PortsAppGui
         }
 
         #endregion
-    }
-
-    public class JsonDataClass
-    {
-        public ConfigStore Configs { get; set; } = new();
-        public List<Service> Services { get; set; } = new();
     }
 }

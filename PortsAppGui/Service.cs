@@ -17,7 +17,7 @@ namespace PortsAppGui
 
         public string ServerPort { get; set; } = "";
         public bool NoDelay { get; set; } = true;
-        public bool UdpEnabled { get; set; } = true;
+        public bool UdpEnabled { get; set; }
         public bool Enabled { get; set; } = true;
     }
 }

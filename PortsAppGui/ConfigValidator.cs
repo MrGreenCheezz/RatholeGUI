@@ -20,6 +20,8 @@ namespace PortsAppGui
                 errors.Add("Server rathole path is required.");
             if (string.IsNullOrWhiteSpace(config.ClientRatholePath))
                 errors.Add("Client rathole path is required.");
+            if (!IsValidPort(config.ControlPort))
+                errors.Add("rathole port must be 1..65535.");
 
             var enabledServices = services.Where(service => service.Enabled).ToList();
             var serviceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -34,6 +36,10 @@ namespace PortsAppGui
 
                 if (IsValidPort(service.ServerPort) && !serverPorts.Add(service.ServerPort.Trim()))
                     errors.Add($"Duplicate server port: {service.ServerPort}.");
+
+                if (IsValidPort(service.ServerPort) && IsValidPort(config.ControlPort) &&
+                    int.Parse(service.ServerPort) == int.Parse(config.ControlPort))
+                    errors.Add($"Service '{DisplayName(service)}': server port {service.ServerPort} is taken by rathole itself (rathole port in Settings).");
             }
 
             return errors;
